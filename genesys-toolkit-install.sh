@@ -50,6 +50,25 @@ function generate_timestamp {
 }
 
 
+# FUNCTION check_platform
+# Checks if the platform is supported
+
+function check_platform {
+
+	local local_kernel_name=$(uname -s)
+	[ $? -ne 0 ] && { print_error "Could not get the kernel name, platform support can't be determined." ; return 1 ; }
+
+	local local_machine_hardware_name=$(uname -m)
+	[ $? -ne 0 ] && { print_error "Could not get the machine hardware name, platform support can't be determined." ; return 1 ; }
+
+	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && return 0
+	[ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "arm64" ] && return 0
+
+	print_error "\"${local_kernel_name} on ${local_machine_hardware_name}\" is not a supported platform."
+	return 1
+}
+
+
 # FUNCTION check_prerequisites
 # Checks the prerequisites, including that no previous toolkits are installed
 
@@ -60,23 +79,6 @@ function check_prerequisites {
 	if [ "$EUID" -ne 0 ]
 	then
 		print_error "This script must be run as root."
-		return 1
-	fi
-
-	# Checks if the platform is supported
-
-	local local_kernel_name=$(uname -s)
-	local local_machine_hardware_name=$(uname -m)
-
-	if [ "$local_kernel_name" != "Linux" ] && [ "$local_kernel_name" != "Darwin" ]
-	then
-		print_error "\"$local_kernel_name\" is not a supported kernel."
-		return 1
-	fi
-
-	if [ "$local_machine_hardware_name" != "aarch64" ] && [ "$local_machine_hardware_name" != "arm64" ]
-	then
-		print_error "\"$local_machine_hardware_name\" is not a supported machine hardware.".
 		return 1
 	fi
 
@@ -193,6 +195,7 @@ function create_tmp_dir {
 	return 0
 }
 
+
 # FUNCTION install_go
 # Installs Go in the directory specified by GO_INSTALL_DIR
 
@@ -304,8 +307,8 @@ function install_go {
 	fi
 	
 	return 0
-
 }
+
 
 # FUNCTION install_cli
 # Installs the Genesys Cloud CLI in the directory specified by CLI_INSTALL_DIR
@@ -520,9 +523,11 @@ function cleanup {
 
 # MAIN PROGRAM
 
+# Checks the platform, runs cleanup and terminates the script if the exit code is not zero
+check_platform || { cleanup $? ; exit $? ; }
+
 # Checks the prerequisites, runs cleanup and terminates the script if the exit code is not zero
 check_prerequisites || { cleanup $? ; exit $? ; }
-
 
 # Creates the temporary installation directory, runs cleanup and terminates the script if the exit code is not zero
 create_tmp_dir || { cleanup $? ; exit $? ; }
