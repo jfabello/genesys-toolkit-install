@@ -98,15 +98,6 @@ function check_prerequisites {
 		return 1
 	fi
 
-	# Checks if make is available
-
-	command -v make 1>/dev/null 2>/dev/null
-	if [ $? -ne 0 ]
-	then 
-		print_error "\"make\" command is not available."
-		return 1
-	fi
-
 	# Checks if the Go installation directory does not exist, or does exist and is a directory
 
 	if [ -e "$GO_INSTALL_DIR" ] && [ ! -d "$GO_INSTALL_DIR" ]
@@ -431,66 +422,6 @@ function install_terraform {
 	return 0
 }
 
-# FUNCTION install_gcprovider
-# Installs the Genesys Cloud Terraform Provider
-
-function install_gcprovider {
-
-	local local_exit_code=0
-
-	# Clones the Genesys Cloud Terraform Provider repository
-
-	local local_provider_github_repository="https://github.com/MyPureCloud/terraform-provider-genesyscloud.git"
-
-	print_info "Cloning the Genesys Cloud Terraform Provider repository from ${local_provider_github_repository} to \"${TMP_DIR}/terraform-provider-genesyscloud\"..."
-	git clone ${local_provider_github_repository} "${TMP_DIR}/terraform-provider-genesyscloud" 2>/dev/null
-
-	local_exit_code=$?
-
-	if [ $local_exit_code -ne 0 ]
-	then
-		print_error "Could not clone the Genesys Cloud Terraform Provider repository from ${local_provider_github_repository} to \"${TMP_DIR}/terraform-provider-genesyscloud\"."
-		return $local_exit_code
-	fi
-
-	print_info "Successfully cloned the Genesys Cloud Terraform Provider repository from ${local_provider_github_repository} to \"${TMP_DIR}/terraform-provider-genesyscloud\"."
-
-	# Builds the Genesys Cloud Terraform Provider
-
-	print_info "Building the Genesys Cloud Terraform Provider..."
-
-	make -C "${TMP_DIR}/terraform-provider-genesyscloud" build 1>/dev/null 2>/dev/null
-
-	local_exit_code=$?
-
-	if [ $local_exit_code -ne 0 ]
-	then
-		print_error "Could not build the Genesys Cloud Terraform Provider."
-		return $local_exit_code
-	fi
-
-	print_info "Successfully built the Genesys Cloud Terraform Provider"
-
-	# Copies the Genesys Cloud Terraform Provider to the Terraform plug-ins folder
-
-	print_info "Installing the Genesys Cloud Terraform Provider in the Terraform plug-ins folder..."
-
-	make -C "${TMP_DIR}/terraform-provider-genesyscloud" sideload 1>/dev/null 2>/dev/null
-
-	local_exit_code=$?
-
-	if [ $local_exit_code -ne 0 ]
-	then
-		print_error "Could not install the Genesys Cloud Terraform Provider in the Terraform plug-ins folder."
-		return $local_exit_code
-	fi
-
-	print_info "Successfully installed the Genesys Cloud Terraform Provider in the Terraform plug-ins folder."
-
-	return 0
-
-}
-
 
 # FUNCTION cleanup
 # Cleans up temporary files and directories, and reverts the installation if it failed
@@ -603,10 +534,6 @@ install_cli || { cleanup $? ; exit $? ; }
 # Installs Terraform, runs cleanup and terminates the script if the exit code is not zero
 
 install_terraform || { cleanup $? ; exit $? ; }
-
-# Installs the Genesys Cloud Terraform Provider, runs cleanup and terminates the script if the exit code is not zero
-
-# install_gcprovider || { cleanup $? ; exit $? ; }
 
 # Runs cleanup without rollback
 cleanup 0
