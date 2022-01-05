@@ -14,7 +14,7 @@ Genesys Toolkit Installer
 - The following UNIX commands: `curl` and `unzip`.
 - A supported UNIX platform (see [supported platforms](#supported-platforms)).
 
-The script will generate a detailed error message if a requierement is not met.
+The script will generate a detailed error message if a requirement is not met.
 
 ## Supported platforms
 
