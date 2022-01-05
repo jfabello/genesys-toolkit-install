@@ -1,39 +1,32 @@
 Genesys Toolkit Installer
 =========================
-**Genesys Toolkit Installer** is a shell script that automatically installs Genesys Cloud developer tools in supported platforms. It installs the following tools:
+**Genesys Toolkit Installer** is a shell script that automatically installs Genesys Cloud developer tools on supported platforms. It installs the following tools:
 
 - [Genesys Cloud CLI](https://developer.genesys.cloud/api/rest/command-line-interface/).
 - [CX as Code](https://developer.genesys.cloud/api/rest/CX-as-Code/).
-- [Archy](https://developer.genesys.cloud/devapps/archy/).
+- [Archy](https://developer.genesys.cloud/devapps/archy/) (Not available on Linux on arm64).
 
 ## Prerequisites
 
 **Genesys Toolkit Installer** requires the following:
 
 - No previous installation of the toolkit tools, the [Go](https://go.dev/) language, and [Terraform](https://www.terraform.io/).
-- The following UNIX commands: `curl`, `make` and `unzip`.
+- The following UNIX commands: `curl` and `unzip`.
 - A supported UNIX platform (see [supported platforms](#supported-platforms)).
 
-The script will generate an error message if any of the requierements are not met.
+The script will generate a detailed error message if a requierement is not met.
 
 ## Supported platforms
 
 **Genesys Toolkit Installer** supports the following platforms:
 
-### Operating systems
-
-- Linux.
-- macOS (support comming soon).
+- Linux (on arm64 only, support for amd64 comming soon).
+- macOS (on arm64 only, support for amd64 comming soon).
 - Windows Subsystem for Linux (WSL) (support comming soon).
-
-### Processor architectures
-
-- arm64.
-- amd64 (also known as x86-64) (support comming soon).
 
 ### Tested platforms
 
-- Ubuntu Server 20.04.3 (arm64).
+- Ubuntu Server 20.04.3 on arm64.
 
 ## Included third-party languages and tools
 
