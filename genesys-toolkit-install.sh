@@ -107,7 +107,7 @@ function check_prerequisites {
 		return 1
 	fi
 
-	# Checks if the Go installation directory does not exists, or does exists and is a directory
+	# Checks if the Go installation directory does not exist, or does exist and is a directory
 
 	if [ -e "$GO_INSTALL_DIR" ] && [ ! -d "$GO_INSTALL_DIR" ]
 	then
@@ -123,7 +123,23 @@ function check_prerequisites {
 		return 1
 	fi
 
-	# Checks if the Genesys Cloud CLI installation directory does not exists, or does exists and is a directory
+	# Checks if the Go path shell script golang-path.sh does not exist in the /etc/profile.d directory
+
+	if [ -e "/etc/profile.d/golang-path.sh" ]
+	then
+		print_error "The shell script \"golang-path.sh\" already exists in the \"/etc/profile.d\" directory."
+		return 1
+	fi
+
+	# Checks if the Go path file golang-path does not exist in the /etc/paths.d directory
+
+	if [ -e "/etc/paths.d/golang-path" ]
+	then
+		print_error "The file \"golang-path.sh\" already exists in the \"/etc/paths.d\" directory."
+		return 1
+	fi
+
+	# Checks if the Genesys Cloud CLI installation directory does not exist, or does exist and is a directory
 
 	if [ -e "$CLI_INSTALL_DIR" ] && [ ! -d "$CLI_INSTALL_DIR" ]
 	then
@@ -139,7 +155,7 @@ function check_prerequisites {
 		return 1
 	fi
 
-	# Checks if the Terraform installation directory does not exists, or does exists and is a directory
+	# Checks if the Terraform installation directory does not exist, or does exist and is a directory
 
 	if [ -e "$TERRAFORM_INSTALL_DIR" ] && [ ! -d "$TERRAFORM_INSTALL_DIR" ]
 	then
@@ -203,7 +219,7 @@ function install_go {
 
 	local local_go_binary_name="go${GO_VERSION}.${local_kernel_name}-${local_machine_hardware_name}.tar.gz"
 
-	# Download Go
+	# Downloads Go
 
 	print_info "Downloading Go ${GO_VERSION} from https://go.dev/dl/${local_go_binary_name}..."
 	curl -L --fail -o "${TMP_DIR}/${local_go_binary_name}" "https://go.dev/dl/${local_go_binary_name}" 2>/dev/null
@@ -218,7 +234,7 @@ function install_go {
 
 	print_info "Successfully downloaded Go ${GO_VERSION} from https://go.dev/dl/${local_go_binary_name}."
 
-	# Create the Go installation directory if needed
+	# Creates the Go installation directory if needed
 
 	if [ ! -e "$GO_INSTALL_DIR" ]
 	then
@@ -235,7 +251,7 @@ function install_go {
 		fi
 	fi
 
-	# Install Go in the installation directory
+	# Installs Go in the installation directory
 
 	tar -C "$GO_INSTALL_DIR" -zxf "${TMP_DIR}/${local_go_binary_name}" 1>/dev/null 2>/dev/null
 
@@ -251,9 +267,9 @@ function install_go {
 
 	GO_INSTALLED=1
 
-	# TEMPORARY: Add Go to the PATH environment variable
+	# Adds Go to the PATH environment variable
 
-	export PATH=$PATH:$GO_INSTALL_DIR/go/bin
+	export PATH=$PATH:${GO_INSTALL_DIR}/go/bin
 
 	# Checks if the Go workspace directory does not exist
 
@@ -265,6 +281,36 @@ function install_go {
 		return 1
 	fi
 
+	# Adds Go to the global path
+
+	if [ -d "/etc/profile.d" ]
+	then
+		echo "export PATH=\$PATH:${GO_INSTALL_DIR}/go/bin" 1>"/etc/profile.d/golang-path.sh" 2>/dev/null
+		if [ $? -eq 0 ]
+		then
+			chmod a+x "/etc/profile.d/golang-path.sh" 1>/dev/null 2>/dev/null
+			if [ $? -eq 0 ]
+			then
+				print_info "Successfully added the \"golang-path.sh\" shell script in the \"/etc/profile.d\" directory, the Go command will be globally available."
+			else
+				print_warn "Could not set the \"golang-path.sh\" shell script execution permisions in the \"/etc/profile.d\" directory, the Go command will not be globally available."
+			fi
+		else
+			print_warn "Could not add the \"golang-path.sh\" shell script to the \"/etc/profile.d\" directory, the Go command will not be globally available."
+		fi
+	elif [ -d "/etc/paths.d" ]
+	then
+		echo "${GO_INSTALL_DIR}/go/bin" 1>"/etc/paths.d/golang-path" 2>/dev/null
+		if [ $? -eq 0 ]
+		then
+			print_info "Successfully added the \"golang-path\" file to the \"/etc/paths.d\" directory, the Go command will be globally available."
+		else
+			print_warn "Could not add the \"golang-path\" file to the \"/etc/paths.d\" directory, the Go command will not be globally available."
+		fi
+	else
+		print_warn "This platform does not support a global PATH environment variable, the Go command will not be globally available."
+	fi
+	
 	return 0
 
 }
@@ -291,7 +337,7 @@ function install_cli {
 
 	print_info "Successfully built the Genesys Cloud CLI."
 
-	# Verify that the Genesys Cloud CLI binary was built
+	# Verifies that the Genesys Cloud CLI binary was built
 
 	if [ ! -f "$(go env GOPATH)/bin/gc" ]
 	then
@@ -299,7 +345,7 @@ function install_cli {
 		return 1
 	fi
 
-	# Create the Genesys Cloud CLI installation directory if needed
+	# Creates the Genesys Cloud CLI installation directory if needed
 
 	if [ ! -e "$CLI_INSTALL_DIR" ]
 	then
@@ -316,7 +362,7 @@ function install_cli {
 		fi
 	fi
 
-	# Copy the Genesys Cloud CLI to the installation directory
+	# Copies the Genesys Cloud CLI to the installation directory
 
 	cp "$(go env GOPATH)/bin/gc" "${CLI_INSTALL_DIR}" 1>/dev/null 2>/dev/null
 	local_exit_code=$?
@@ -351,7 +397,7 @@ function install_terraform {
 
 	local local_terraform_binary_name="terraform_${TERRAFORM_VERSION}_${local_kernel_name}_${local_machine_hardware_name}.zip"
 
-	# Download Terraform
+	# Downloads Terraform
 
 	print_info "Downloading Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}..."
 	curl -L --fail -o "${TMP_DIR}/${local_terraform_binary_name}" "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}" 2>/dev/null
@@ -366,7 +412,7 @@ function install_terraform {
 
 	print_info "Successfully downloaded Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}."
 
-	# Install Terraform in the installation directory
+	# Installs Terraform in the installation directory
 
 	unzip "${TMP_DIR}/${local_terraform_binary_name}" -d "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
 
@@ -392,7 +438,7 @@ function install_gcprovider {
 
 	local local_exit_code=0
 
-	# Clone the Genesys Cloud Terraform Provider repository
+	# Clones the Genesys Cloud Terraform Provider repository
 
 	local local_provider_github_repository="https://github.com/MyPureCloud/terraform-provider-genesyscloud.git"
 
@@ -409,7 +455,7 @@ function install_gcprovider {
 
 	print_info "Successfully cloned the Genesys Cloud Terraform Provider repository from ${local_provider_github_repository} to \"${TMP_DIR}/terraform-provider-genesyscloud\"."
 
-	# Build the Genesys Cloud Terraform Provider
+	# Builds the Genesys Cloud Terraform Provider
 
 	print_info "Building the Genesys Cloud Terraform Provider..."
 
@@ -425,7 +471,7 @@ function install_gcprovider {
 
 	print_info "Successfully built the Genesys Cloud Terraform Provider"
 
-	# Copy the Genesys Cloud Terraform Provider to the Terraform plug-ins folder
+	# Copies the Genesys Cloud Terraform Provider to the Terraform plug-ins folder
 
 	print_info "Installing the Genesys Cloud Terraform Provider in the Terraform plug-ins folder..."
 
@@ -482,6 +528,28 @@ function cleanup {
 		if [ $CLI_INSTALL_DIR_CREATED -eq 1 ]
 		then
 			rm -Rf "$CLI_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
+		fi
+
+		# Removes Go from the global path
+
+		if [ -d "/etc/profile.d" ] && [ -f "/etc/profile.d/golang-path.sh" ]
+		then
+			rm "/etc/profile.d/golang-path.sh" 1>/dev/null 2>/dev/null
+			if [ $? -eq 0 ]
+			then
+				print_info "Successfully removed the \"golang-path.sh\" shell script from the \"/etc/profile.d\" directory."
+			else
+				print_error "Could not remove the \"golang-path.sh\" shell script from the \"/etc/profile.d\" directory."
+			fi
+		elif [ -d "/etc/paths.d" ] && [ -f "/etc/paths.d/golang-path" ]
+		then
+			rm "/etc/paths.d/golang-path" 1>/dev/null 2>/dev/null
+			if [ $? -eq 0 ]
+			then
+				print_info "Successfully removed the \"golang-path\" file from the \"/etc/paths.d\" directory."
+			else
+				print_error "Could not remove the \"golang-path\" file from the \"/etc/paths.d\" directory."
+			fi
 		fi
 
 		# Removes the Go workspace and installation directories
