@@ -506,7 +506,7 @@ function cleanup {
 
 		if [ $TERRAFORM_INSTALLED -eq 1 ]
 		then
-			rm -Rf "${TERRAFORM_INSTALL_DIR}/terraform" 1>/dev/null 2>/dev/null && print_info "Successfully removed Terraform from \"${TERRAFORM_INSTALL_DIR}\"." || print_error "Could not remove Terraform from \"${TERRAFORM_INSTALL_DIR}\"."
+			rm -f "${TERRAFORM_INSTALL_DIR}/terraform" 1>/dev/null 2>/dev/null && print_info "Successfully removed Terraform from \"${TERRAFORM_INSTALL_DIR}\"." || print_error "Could not remove Terraform from \"${TERRAFORM_INSTALL_DIR}\"."
 		fi
 
 		# Removes the Terraform installation directory if it was created by this script
@@ -520,7 +520,7 @@ function cleanup {
 
 		if [ $CLI_INSTALLED -eq 1 ]
 		then
-			rm -Rf "${CLI_INSTALL_DIR}/gc" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud CLI from \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud CLI from \"${CLI_INSTALL_DIR}\"."
+			rm -f "${CLI_INSTALL_DIR}/gc" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud CLI from \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud CLI from \"${CLI_INSTALL_DIR}\"."
 		fi
 
 		# Removes the Genesys Cloud CLI installation directory if it was created by this script
@@ -534,7 +534,7 @@ function cleanup {
 
 		if [ -d "/etc/profile.d" ] && [ -f "/etc/profile.d/golang-path.sh" ]
 		then
-			rm "/etc/profile.d/golang-path.sh" 1>/dev/null 2>/dev/null
+			rm -f "/etc/profile.d/golang-path.sh" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
 				print_info "Successfully removed the \"golang-path.sh\" shell script from the \"/etc/profile.d\" directory."
@@ -543,7 +543,7 @@ function cleanup {
 			fi
 		elif [ -d "/etc/paths.d" ] && [ -f "/etc/paths.d/golang-path" ]
 		then
-			rm "/etc/paths.d/golang-path" 1>/dev/null 2>/dev/null
+			rm -f "/etc/paths.d/golang-path" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
 				print_info "Successfully removed the \"golang-path\" file from the \"/etc/paths.d\" directory."
