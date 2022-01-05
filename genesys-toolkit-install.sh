@@ -68,13 +68,13 @@ function check_prerequisites {
 	local local_kernel_name=$(uname -s)
 	local local_machine_hardware_name=$(uname -m)
 
-	if [ "$local_kernel_name" != "Linux" ]
+	if [ "$local_kernel_name" != "Linux" ] && [ "$local_kernel_name" != "Darwin" ]
 	then
 		print_error "\"$local_kernel_name\" is not a supported kernel."
 		return 1
 	fi
 
-	if [ "$local_machine_hardware_name" != "aarch64" ]
+	if [ "$local_machine_hardware_name" != "aarch64" ] && [ "$local_machine_hardware_name" != "arm64" ]
 	then
 		print_error "\"$local_machine_hardware_name\" is not a supported machine hardware.".
 		return 1
@@ -205,8 +205,9 @@ function install_go {
 	local local_kernel_name=$(uname -s)
 	local local_machine_hardware_name=$(uname -m)
 
-	[ $local_kernel_name == "Linux" ] && local_kernel_name="linux"
-	[ $local_machine_hardware_name == "aarch64" ] && local_machine_hardware_name="arm64"
+	[ "$local_kernel_name" == "Linux" ] && local_kernel_name="linux"
+	[ "$local_kernel_name" == "Darwin" ] && local_kernel_name="darwin"
+	[ "$local_machine_hardware_name" == "aarch64" ] && local_machine_hardware_name="arm64"
 
 	local local_go_binary_name="go${GO_VERSION}.${local_kernel_name}-${local_machine_hardware_name}.tar.gz"
 
@@ -383,8 +384,9 @@ function install_terraform {
 	local local_kernel_name=$(uname -s)
 	local local_machine_hardware_name=$(uname -m)
 
-	[ $local_kernel_name == "Linux" ] && local_kernel_name="linux"
-	[ $local_machine_hardware_name == "aarch64" ] && local_machine_hardware_name="arm64"
+	[ "$local_kernel_name" == "Linux" ] && local_kernel_name="linux"
+	[ "$local_kernel_name" == "Darwin" ] && local_kernel_name="darwin"
+	[ "$local_machine_hardware_name" == "aarch64" ] && local_machine_hardware_name="arm64"
 
 	local local_terraform_binary_name="terraform_${TERRAFORM_VERSION}_${local_kernel_name}_${local_machine_hardware_name}.zip"
 
