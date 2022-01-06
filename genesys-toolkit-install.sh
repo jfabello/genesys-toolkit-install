@@ -3,17 +3,25 @@
 ## GLOBAL VARIABLES
 
 TMP_DIR="" # Temporary directory, set automatically by the create_tmp_dir function
+
 GO_INSTALL_DIR="/usr/local" # Go installation directory
 GO_INSTALL_DIR_CREATED=0 # Go installation directory creation status
 GO_VERSION="1.17.5" # Go version to be installed
 GO_INSTALLED=0 # Go installation status
+
 CLI_INSTALL_DIR="/usr/local/bin" # Genesys Cloud CLI installation directory
 CLI_INSTALL_DIR_CREATED=0 # Genesys Cloud CLI installation directory creation status
 CLI_INSTALLED=0 # Genesys Cloud CLI installation status
+
 TERRAFORM_INSTALL_DIR="/usr/local/bin" # Terraform installation directory
 TERRAFORM_INSTALL_DIR_CREATED=0 # Terraform installation directory creation status
 TERRAFORM_VERSION="1.1.2" # Terraform version to be installed
 TERRAFORM_INSTALLED=0 # Terraform installation status
+
+ARCHY_ZPROFILE_CREATED=0 # .zprofile creation status
+ARCHY_BASHPROFILE_CREATED=0 # .bash_profile creation status
+ARCHY_INSTALLED=0 # Archy installation status
+
 
 # FUNCTION report_info:
 # Prints an informational message to stdout
@@ -161,6 +169,14 @@ function check_prerequisites {
 	if [ -e "${TERRAFORM_INSTALL_DIR}/terraform" ]
 	then
 		print_error "Terraform is already installed in \"$TERRAFORM_INSTALL_DIR\"."
+		return 1
+	fi
+
+	# Checks if Archy is not installed
+
+	if [ -e "${HOME}/archy" ]
+	then
+		print_error "Archy is already installed in \"$HOME\"."
 		return 1
 	fi
 
@@ -349,10 +365,10 @@ function install_cli {
 
 		if [ $local_exit_code -ne 0 ]
 		then
-			print_error "Could not create the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}."
+			print_error "Could not create the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
 			return $local_exit_code
 		else
-			print_info "Successfully created the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}."
+			print_info "Successfully created the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
 			CLI_INSTALL_DIR_CREATED=1
 		fi
 	fi
@@ -428,6 +444,152 @@ function install_terraform {
 }
 
 
+# FUNCTION add_archy_path_to_zprofile
+# Adds Archy to the PATH environment variable in the current user's .zprofile file
+
+function add_archy_path_to_zprofile {
+	
+	if [ ! -e "${HOME}/.zprofile" ]
+	then
+		sudo -u $SUDO_USER touch "${HOME}/.zprofile"
+		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh." ; return 1 ; }
+	fi
+
+	if [ -s "${HOME}/.zprofile" ]
+	then
+		tail -c1 "${HOME}/.zprofile" | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.zprofile"
+		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh." ; return 1 ; }
+	fi
+
+	if [ -f "${HOME}/.zprofile" ]			
+	then
+		printf "# Archy path added by genesys-toolkit-install.sh\n" >> "${HOME}/.zprofile"
+		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.zprofile"
+		if [ $? -eq 0 ]
+		then
+			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will be globally available to the user \"${SUDO_USER}\" when using Zsh."
+			return 0
+		else
+			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh."
+			[ $ARCHY_ZPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.zprofile"
+			return 1
+		fi
+	else
+		print_warn "\"${HOME}/.zprofile\" is not a regular file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh."
+		return 1
+	fi
+}
+
+
+# FUNCTION add_archy_path_to_bash_profile
+# Adds Archy to the PATH environment variable in the current user's .bash_profile file
+
+function add_archy_path_to_bash_profile {
+	
+	if [ ! -e "${HOME}/.bash_profile" ]
+	then
+		sudo -u $SUDO_USER touch "${HOME}/.bash_profile"
+		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash." ; return 1 ; }
+	fi
+
+	if [ -s "${HOME}/.bash_profile" ]
+	then
+		tail -c1 "${HOME}/.bash_profile" | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.bash_profile"
+		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash." ; return 1 ; }
+	fi
+
+	if [ -f "${HOME}/.bash_profile" ]			
+	then
+		printf "# Archy path added by genesys-toolkit-install.sh\n" >> "${HOME}/.bash_profile"
+		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.bash_profile"
+		if [ $? -eq 0 ]
+		then
+			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will be globally available to the user \"${SUDO_USER}\" when using Bash."
+			return 0
+		else
+			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash."
+			[ $ARCHY_BASHPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.bash_profile"
+			return 1
+		fi
+	else
+		print_warn "\"${HOME}/.bash_profile\" is not a regular file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash."
+		return 1
+	fi
+}
+
+
+# FUNCTION install_archy
+# Installs Archy in the current user's home directory
+
+function install_archy {
+
+	local local_exit_code=0
+
+	# Generates the Archy binary release name and verifies that the platform is supported
+
+	local local_kernel_name=$(uname -s)
+	local local_machine_hardware_name=$(uname -m)
+	local local_archy_binary_name=""
+
+	[ "$local_kernel_name" == "Darwin" ] && local_archy_binary_name="archy-macos.zip"
+
+	[ -z "$local_archy_binary_name" ] && { print_warn "Archy does not support the \"${local_kernel_name} on ${local_machine_hardware_name}\" platform, skipping the Archy installation." ; return 0 ; }
+
+	# Downloads Archy
+
+	print_info "Downloading Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}..."
+	curl -L --fail -o "${TMP_DIR}/${local_archy_binary_name}" "https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}" 2>/dev/null
+
+	local_exit_code=$?
+
+	if [ $local_exit_code -ne 0 ]
+	then
+		print_error "Could not download Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}."
+		return $local_exit_code
+	fi
+
+	print_info "Successfully downloaded Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}."
+
+	# Installs Archy in the user's home directory
+
+	sudo -u $SUDO_USER unzip "${TMP_DIR}/${local_archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+
+	local_exit_code=$?
+
+	if [ $local_exit_code -ne 0 ]
+	then
+		print_error "Could not install Archy to \"${HOME}\"."
+		return $local_exit_code
+	fi
+
+	print_info "Successfully installed Archy to \"${HOME}\"."
+
+	ARCHY_INSTALLED=1
+
+	# Adds Archy to the PATH environment variable
+
+	export PATH=$PATH:${HOME}/archy
+
+	# Adds Archy to the user's PATH environment variable for Zsh and Bash
+
+	add_archy_path_to_zprofile
+	add_archy_path_to_bash_profile
+
+	# Initializes Archy
+
+	( cd ${HOME}/archy && sudo -u $SUDO_USER ./archy version 1>/dev/null 2>/dev/null )
+
+	if [ $? -eq 0 ]
+	then
+		print_info "Successfully initialized Archy."
+		return 0
+	else
+		print_error "Could not initialize Archy."
+		return 1
+	fi
+}
+
+
 # FUNCTION cleanup
 # Cleans up temporary files and directories, and reverts the installation if it failed
 # arg1: Exit code
@@ -437,6 +599,61 @@ function cleanup {
 	if [ $1 -ne 0 ]
 	then
 		print_warn "Starting cleanup with rollback..."
+
+		# Removes .bash_profile if it was created by the Archy installation
+
+		if [ $ARCHY_BASHPROFILE_CREATED -eq 1 ]
+		then
+			rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null && print_info "Successfully removed \".bash_profile\" from \"${HOME}\"." || print_error "Could not remove \".bash_profile\" from \"${HOME}\"."
+		fi
+
+		# Removes .zprofile if it was created by the Archy installation
+
+		if [ $ARCHY_ZPROFILE_CREATED -eq 1 ]
+		then
+			rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null && print_info "Successfully removed \".zprofile\" from \"${HOME}\"." || print_error "Could not remove \".zprofile\" from \"${HOME}\"."
+		fi
+
+		# Removes Archy from the PATH environment variable in the current user's .bash_profile file
+
+		if [ -f "${HOME}/.bash_profile" ]
+		then
+			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
+			if [ $? -eq 0 ]
+			then
+				sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+				if [ $? -eq 0 ]
+				then
+					print_info "Successfully removed Archy from the PATH environment variable in \"${HOME}/.bash_profile\"."
+				else
+					print_error "Could not remove Archy from the PATH environment variable in \"${HOME}/.bash_profile\"."
+				fi
+			fi
+		fi
+
+		# Removes Archy from the PATH environment variable in the current user's .zprofile file
+
+		if [ -f "${HOME}/.zprofile" ]
+		then
+			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
+			if [ $? -eq 0 ]
+			then
+				sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
+				if [ $? -eq 0 ]
+				then
+					print_info "Successfully removed Archy from the PATH environment variable in \"${HOME}/.zprofile\"."
+				else
+					print_error "Could not remove Archy from the PATH environment variable in \"${HOME}/.zprofile\"."
+				fi
+			fi
+		fi
+
+		# Removes Archy
+
+		if [ $ARCHY_INSTALLED -eq 1 ]
+		then
+			rm -Rf "${HOME}/archy" 1>/dev/null 2>/dev/null && print_info "Successfully removed Archy from \"${HOME}\"." || print_error "Could not remove Archy from \"${HOME}\"."
+		fi
 
 		# Removes Terraform
 
@@ -507,7 +724,6 @@ function cleanup {
 			local local_go_path="$(go env GOPATH)"
 			rm -Rf "$local_go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${local_go_path}\"." || print_error "Could not remove the Go workspace directory \"${local_go_path}\"."
 		fi
-
 	fi
 
 	# Removes the temporary directory if it was created
@@ -541,6 +757,10 @@ install_cli || { cleanup $? ; exit $? ; }
 # Installs Terraform, runs cleanup and terminates the script if the exit code is not zero
 
 install_terraform || { cleanup $? ; exit $? ; }
+
+# Installs Archy, runs cleanup and terminates the script if the exit code is not zero
+
+install_archy || { cleanup $? ; exit $? ; }
 
 # Runs cleanup without rollback
 cleanup 0
