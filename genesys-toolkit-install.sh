@@ -71,9 +71,31 @@ function check_platform {
 
 	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && return 0
 	[ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "arm64" ] && return 0
+	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "x86_64" ] && return 0
 
 	print_error "\"${local_kernel_name} on ${local_machine_hardware_name}\" is not a supported platform."
 	return 1
+}
+
+# FUNCTION set_home_var
+# Sets the HOME environment variable
+
+function set_home_var {
+
+	# Sets the HOME environment variable to the user's home when the kernel is Linux
+
+	if [ "$(uname -s)" == "Linux" ]
+	then
+		export HOME=$(getent passwd vmadmin | cut -d: -f6)
+	fi
+
+	if [ -z $HOME ]
+	then
+		print_error "Could not set the HOME environment variable."
+		return 1
+	fi
+
+	return 0
 }
 
 
@@ -227,6 +249,7 @@ function install_go {
 	[ "$local_kernel_name" == "Linux" ] && local_kernel_name="linux"
 	[ "$local_kernel_name" == "Darwin" ] && local_kernel_name="darwin"
 	[ "$local_machine_hardware_name" == "aarch64" ] && local_machine_hardware_name="arm64"
+	[ "$local_machine_hardware_name" == "x86_64" ] && local_machine_hardware_name="amd64"
 
 	local local_go_binary_name="go${GO_VERSION}.${local_kernel_name}-${local_machine_hardware_name}.tar.gz"
 
@@ -406,6 +429,7 @@ function install_terraform {
 	[ "$local_kernel_name" == "Linux" ] && local_kernel_name="linux"
 	[ "$local_kernel_name" == "Darwin" ] && local_kernel_name="darwin"
 	[ "$local_machine_hardware_name" == "aarch64" ] && local_machine_hardware_name="arm64"
+	[ "$local_machine_hardware_name" == "x86_64" ] && local_machine_hardware_name="amd64"
 
 	local local_terraform_binary_name="terraform_${TERRAFORM_VERSION}_${local_kernel_name}_${local_machine_hardware_name}.zip"
 
@@ -532,6 +556,7 @@ function install_archy {
 	local local_archy_binary_name=""
 
 	[ "$local_kernel_name" == "Darwin" ] && local_archy_binary_name="archy-macos.zip"
+	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "x86_64" ] && local_archy_binary_name="archy-linux.zip"
 
 	[ -z "$local_archy_binary_name" ] && { print_warn "Archy does not support the \"${local_kernel_name} on ${local_machine_hardware_name}\" platform, skipping the Archy installation." ; return 0 ; }
 
@@ -596,6 +621,8 @@ function install_archy {
 
 function cleanup {
 
+	local local_kernel_name=$(uname -s)
+
 	if [ $1 -ne 0 ]
 	then
 		print_warn "Starting cleanup with rollback..."
@@ -621,7 +648,12 @@ function cleanup {
 			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
-				sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+				if [ $local_kernel_name == "Darwin" ]
+				then
+					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+				else
+					sed -i -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+				fi
 				if [ $? -eq 0 ]
 				then
 					print_info "Successfully removed Archy from the PATH environment variable in \"${HOME}/.bash_profile\"."
@@ -638,7 +670,12 @@ function cleanup {
 			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
-				sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
+				if [ $local_kernel_name == "Darwin" ]
+				then
+					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
+				else
+					sed -i -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
+				fi
 				if [ $? -eq 0 ]
 				then
 					print_info "Successfully removed Archy from the PATH environment variable in \"${HOME}/.zprofile\"."
@@ -741,6 +778,9 @@ function cleanup {
 
 # Checks the platform, runs cleanup and terminates the script if the exit code is not zero
 check_platform || { cleanup $? ; exit $? ; }
+
+# Sets the HOME environment variable, runs cleanup and terminates the script if the exit code is not zero
+set_home_var || { cleanup $? ; exit $? ; }
 
 # Checks the prerequisites, runs cleanup and terminates the script if the exit code is not zero
 check_prerequisites || { cleanup $? ; exit $? ; }
