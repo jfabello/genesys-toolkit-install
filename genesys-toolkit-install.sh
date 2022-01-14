@@ -72,6 +72,7 @@ function check_platform {
 	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && return 0
 	[ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "arm64" ] && return 0
 	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "x86_64" ] && return 0
+	[ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "x86_64" ] && return 0
 
 	print_error "\"${local_kernel_name} on ${local_machine_hardware_name}\" is not a supported platform."
 	return 1

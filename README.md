@@ -21,12 +21,14 @@ The script will generate a detailed error message if a requirement is not met.
 **Genesys Toolkit Installer** supports the following platforms:
 
 - Linux on x86_64 and arm64.
-- macOS (on arm64 only, support for x86_64 comming soon).
+- macOS on x8 and arm64.
 
 ### Tested platforms
 
 - Ubuntu Server 20.04.3 on x86_64.
 - Ubuntu Server 20.04.3 on arm64.
+- macOS Big Sur 11.6.2 on x86_64.
+- macOS Monterey 12.1 on arm64.
 
 ## Included third-party languages and tools
 
