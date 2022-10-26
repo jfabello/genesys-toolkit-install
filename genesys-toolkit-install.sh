@@ -6,7 +6,7 @@ TMP_DIR="" # Temporary directory, set automatically by the create_tmp_dir functi
 
 GO_INSTALL_DIR="/usr/local" # Go installation directory
 GO_INSTALL_DIR_CREATED=0 # Go installation directory creation status
-GO_VERSION="1.18.3" # Go version to be installed
+GO_VERSION="1.19.2" # Go version to be installed
 GO_INSTALLED=0 # Go installation status
 
 CLI_INSTALL_DIR="/usr/local/bin" # Genesys Cloud CLI installation directory
@@ -15,7 +15,7 @@ CLI_INSTALLED=0 # Genesys Cloud CLI installation status
 
 TERRAFORM_INSTALL_DIR="/usr/local/bin" # Terraform installation directory
 TERRAFORM_INSTALL_DIR_CREATED=0 # Terraform installation directory creation status
-TERRAFORM_VERSION="1.2.3" # Terraform version to be installed
+TERRAFORM_VERSION="1.3.3" # Terraform version to be installed
 TERRAFORM_INSTALLED=0 # Terraform installation status
 
 ARCHY_ZPROFILE_CREATED=0 # .zprofile creation status
