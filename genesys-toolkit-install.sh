@@ -11,6 +11,7 @@ GO_INSTALLED=0 # Go installation status
 
 CLI_INSTALL_DIR="/usr/local/bin" # Genesys Cloud CLI installation directory
 CLI_INSTALL_DIR_CREATED=0 # Genesys Cloud CLI installation directory creation status
+CLI_VERSION="61.0.1" # Genesys Cloud CLI version to be installed
 CLI_INSTALLED=0 # Genesys Cloud CLI installation status
 
 TERRAFORM_INSTALL_DIR="/usr/local/bin" # Terraform installation directory
@@ -360,7 +361,7 @@ function install_cli {
 	# Builds the Genesys Cloud CLI with Go
 
 	print_info "Building the Genesys Cloud CLI with Go..."
-	go install github.com/mypurecloud/platform-client-sdk-cli/build/gc@latest 1>/dev/null 2>/dev/null
+	go install "github.com/mypurecloud/platform-client-sdk-cli/build/gc@${CLI_VERSION}" 1>/dev/null 2>/dev/null
 
 	local_exit_code=$?
 
