@@ -88,10 +88,15 @@ function set_home_var {
 
 	if [ "$(uname -s)" == "Linux" ]
 	then
-		export HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+		if [ -z "$SUDO_USER" ]
+		then
+			export HOME=$(getent passwd root | cut -d: -f6)
+		else
+			export HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+		fi
 	fi
 
-	if [ -z $HOME ]
+	if [ -z "$HOME" ]
 	then
 		print_error "Could not set the HOME environment variable."
 		return 1
