@@ -34,5 +34,5 @@ The script will generate a detailed error message if a requirement is not met.
 
 **Genesys Toolkit Installer** installs the following third-party languages and tools:
 
-- [Go](https://go.dev/) 1.22.3
-- [Terraform](https://www.terraform.io/) 1.8.4
+- [Go](https://go.dev/) 1.23.0
+- [Terraform](https://www.terraform.io/) 1.9.5
