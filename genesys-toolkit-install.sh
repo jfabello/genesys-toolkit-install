@@ -79,6 +79,21 @@ function check_platform {
 	return 1
 }
 
+# FUNCTION set_current_user
+# Sets the CURRENT_USER environment variable
+
+function set_current_user {
+	if [ -z "$SUDO_USER" ]
+	then
+		export CURRENT_USER="root"
+	else
+		export CURRENT_USER="$SUDO_USER"
+	fi
+
+	return 0
+}
+
+
 # FUNCTION set_home_var
 # Sets the HOME environment variable
 
@@ -88,12 +103,7 @@ function set_home_var {
 
 	if [ "$(uname -s)" == "Linux" ]
 	then
-		if [ -z "$SUDO_USER" ]
-		then
-			export HOME=$(getent passwd root | cut -d: -f6)
-		else
-			export HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
-		fi
+		export HOME=$(getent passwd $CURRENT_USER | cut -d: -f6)
 	fi
 
 	if [ -z "$HOME" ]
@@ -482,14 +492,19 @@ function add_archy_path_to_zprofile {
 	
 	if [ ! -e "${HOME}/.zprofile" ]
 	then
-		sudo -u $SUDO_USER touch "${HOME}/.zprofile"
-		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh." ; return 1 ; }
+		if [ -z "$SUDO_USER" ]
+		then
+			touch "${HOME}/.zprofile"
+		else
+			sudo -u $SUDO_USER touch "${HOME}/.zprofile"
+		fi
+		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
 	fi
 
 	if [ -s "${HOME}/.zprofile" ]
 	then
 		tail -c1 "${HOME}/.zprofile" | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.zprofile"
-		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh." ; return 1 ; }
+		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
 	fi
 
 	if [ -f "${HOME}/.zprofile" ]			
@@ -498,15 +513,15 @@ function add_archy_path_to_zprofile {
 		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.zprofile"
 		if [ $? -eq 0 ]
 		then
-			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will be globally available to the user \"${SUDO_USER}\" when using Zsh."
+			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will be globally available to the user \"${CURRENT_USER}\" when using Zsh."
 			return 0
 		else
-			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh."
+			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh."
 			[ $ARCHY_ZPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.zprofile"
 			return 1
 		fi
 	else
-		print_warn "\"${HOME}/.zprofile\" is not a regular file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Zsh."
+		print_warn "\"${HOME}/.zprofile\" is not a regular file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh."
 		return 1
 	fi
 }
@@ -519,14 +534,19 @@ function add_archy_path_to_bash_profile {
 	
 	if [ ! -e "${HOME}/.bash_profile" ]
 	then
-		sudo -u $SUDO_USER touch "${HOME}/.bash_profile"
-		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash." ; return 1 ; }
+		if [ -z "$SUDO_USER" ]
+		then
+			touch "${HOME}/.bash_profile"
+		else
+			sudo -u $SUDO_USER touch "${HOME}/.bash_profile"
+		fi
+		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
 	fi
 
 	if [ -s "${HOME}/.bash_profile" ]
 	then
 		tail -c1 "${HOME}/.bash_profile" | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.bash_profile"
-		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash." ; return 1 ; }
+		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
 	fi
 
 	if [ -f "${HOME}/.bash_profile" ]			
@@ -535,15 +555,15 @@ function add_archy_path_to_bash_profile {
 		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.bash_profile"
 		if [ $? -eq 0 ]
 		then
-			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will be globally available to the user \"${SUDO_USER}\" when using Bash."
+			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will be globally available to the user \"${CURRENT_USER}\" when using Bash."
 			return 0
 		else
-			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash."
+			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash."
 			[ $ARCHY_BASHPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.bash_profile"
 			return 1
 		fi
 	else
-		print_warn "\"${HOME}/.bash_profile\" is not a regular file, Archy will not be globally available to the user \"${SUDO_USER}\" when using Bash."
+		print_warn "\"${HOME}/.bash_profile\" is not a regular file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash."
 		return 1
 	fi
 }
@@ -584,7 +604,12 @@ function install_archy {
 
 	# Installs Archy in the user's home directory
 
-	sudo -u $SUDO_USER unzip "${TMP_DIR}/${local_archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+	if [ -z "$SUDO_USER" ]
+	then
+		unzip "${TMP_DIR}/${local_archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+	else
+		sudo -u $SUDO_USER unzip "${TMP_DIR}/${local_archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+	fi
 
 	local_exit_code=$?
 
@@ -609,7 +634,12 @@ function install_archy {
 
 	# Initializes Archy
 
-	( cd ${HOME}/archy && sudo -u $SUDO_USER ./archy version 1>/dev/null 2>/dev/null )
+	if [ -z "$SUDO_USER" ]
+	then
+		( cd ${HOME}/archy && ./archy version 1>/dev/null 2>/dev/null )
+	else
+		( cd ${HOME}/archy && sudo -u $SUDO_USER ./archy version 1>/dev/null 2>/dev/null )
+	fi
 
 	if [ $? -eq 0 ]
 	then
@@ -785,6 +815,9 @@ function cleanup {
 
 # Checks the platform, runs cleanup and terminates the script if the exit code is not zero
 check_platform || { cleanup $? ; exit $? ; }
+
+# Sets the CURRENT_USER environment variable, runs cleanup and terminates the script if the exit code is not zero
+set_current_user || { cleanup $? ; exit $? ; }
 
 # Sets the HOME environment variable, runs cleanup and terminates the script if the exit code is not zero
 set_home_var || { cleanup $? ; exit $? ; }
