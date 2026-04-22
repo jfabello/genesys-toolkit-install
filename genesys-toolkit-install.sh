@@ -467,7 +467,7 @@ function install_terraform {
 
 	# Installs Terraform in the installation directory
 
-	unzip "${TMP_DIR}/${local_terraform_binary_name}" -d "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
+	unzip "${TMP_DIR}/${local_terraform_binary_name}" terraform -d "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
 
 	local_exit_code=$?
 
@@ -583,9 +583,28 @@ function install_archy {
 	local local_archy_binary_name=""
 
 	[ "$local_kernel_name" == "Darwin" ] && local_archy_binary_name="archy-macos.zip"
-	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "x86_64" ] && local_archy_binary_name="archy-linux.zip"
+	[ "$local_kernel_name" == "Linux" ] && local_archy_binary_name="archy-linux.zip"
 
 	[ -z "$local_archy_binary_name" ] && { print_warn "Archy does not support the \"${local_kernel_name} on ${local_machine_hardware_name}\" platform, skipping the Archy installation." ; return 0 ; }
+
+	# Checks if the script is running on macOS on Apple Silicon and Rosetta 2 is installed
+	if [ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "arm64" ]
+	then
+		pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto 1>/dev/null 2>/dev/null
+
+		local_exit_code=$?
+
+		if [ $local_exit_code -ne 0 ]
+		then
+			print_error "Rosetta 2 is required to run Archy on macOS on Apple Silicon, but it is not installed. Please install Rosetta 2 and run the toolkit installer again."
+			return $local_exit_code
+		fi
+	fi
+
+	# Checks if the script running on Linux on ARM architecture
+	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && print_warn "Archy on Linux on ARM architecture requires emulation to run x86_64 binaries. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
+
+	# TODO: Implement additional checks when the script is running on Linux on ARM architecture
 
 	# Downloads Archy
 
