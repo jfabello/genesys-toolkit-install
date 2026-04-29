@@ -1,14 +1,36 @@
-Genesys Toolkit Installer
-=========================
-**Genesys Toolkit Installer** is a shell script that automatically installs Genesys Cloud developer tools on supported platforms. It installs the following tools:
+# Genesys Toolkit Installer
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+The **Genesys Toolkit Installer** is a shell script that automatically installs Genesys Cloud developer tools on supported platforms. It installs the following tools:
 
 - [Platform API CLI](https://developer.genesys.cloud/devapps/cli/).
 - [CX as Code](https://developer.genesys.cloud/devapps/cx-as-code/).
 - [Archy](https://developer.genesys.cloud/devapps/archy/).
 
+## Installation
+
+You can get the script by using `git`:
+
+```shell
+git clone https://github.com/jfabello/genesys-toolkit-install.git
+```
+
+## Usage
+
+Run the script using `sudo`:
+
+```shell
+sudo genesys-toolkit-install.sh
+```
+
+> [!WARNING]
+>
+>  Although efforts have been made to make the script as safe to use as possible, please test the script first on a virtual machine or sandbox as a precaution.
+
 ## Prerequisites
 
-**Genesys Toolkit Installer** requires the following:
+The **Genesys Toolkit Installer** requires the following:
 
 - No previous installation of the toolkit tools, the [Go](https://go.dev/) language, and [Terraform](https://www.terraform.io/).
 - The following UNIX commands: `curl` and `unzip`.
@@ -18,7 +40,7 @@ Genesys Toolkit Installer
 
 The script will generate a detailed error message if a requirement is not met.
 
-> [!WARNING]
+> [!IMPORTANT]
 > Checks for the prerequisites when the platform is Linux on arm64 are not fully implemented. The installer might fail silently. As a precaution, a warning is shown when the toolkit installer is running on the aforementioned platform.
 
 ## Supported platforms
@@ -41,3 +63,15 @@ The script will generate a detailed error message if a requirement is not met.
 
 - [Go](https://go.dev/) 1.26.2
 - [Terraform](https://www.terraform.io/) 1.14.8
+
+## Contributing
+
+Unfortunately, we are not able to accept contributions at this time.
+
+If you find a bug in the code, please open an issue.
+
+Thank you for your understanding.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
