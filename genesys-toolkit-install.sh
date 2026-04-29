@@ -601,7 +601,7 @@ function install_archy {
 		fi
 	fi
 
-	# Checks if the script running on Linux on ARM architecture
+	# Checks if the script is running on Linux on ARM architecture
 	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && print_warn "Archy on Linux on ARM architecture requires emulation to run x86_64 binaries. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
 
 	# TODO: Implement additional checks when the script is running on Linux on ARM architecture
