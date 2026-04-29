@@ -8,6 +8,12 @@ The **Genesys Toolkit Installer** is a shell script that automatically installs 
 - [CX as Code](https://developer.genesys.cloud/devapps/cx-as-code/).
 - [Archy](https://developer.genesys.cloud/devapps/archy/).
 
+## What is New
+
+### Version 0.1.0
+
+- Initial beta version
+
 ## Installation
 
 You can get the script by using `git`:
