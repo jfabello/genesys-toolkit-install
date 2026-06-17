@@ -195,7 +195,7 @@ function create_tmp_dir {
 	local exit_code=0
 
 	local tmp_dir
-	tmp_dir=$(mktemp -d genesys-toolkit-install-XXXXXX 2>/dev/null)
+	tmp_dir=$(mktemp -d "/var/tmp/genesys-toolkit-install-XXXXXX" 2>/dev/null)
 
 	exit_code=$?
 	
