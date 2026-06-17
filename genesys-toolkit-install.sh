@@ -48,11 +48,11 @@ function print_error {
 # Checks if the platform is supported
 function check_platform {
 	local kernel_name
-	kernel_name=$(uname -s)
+	kernel_name=$(uname -s 2>/dev/null)
 	[ $? -ne 0 ] && { print_error "Could not get the kernel name, platform support can't be determined." ; return 1 ; }
 
 	local machine_hardware_name
-	machine_hardware_name=$(uname -m)
+	machine_hardware_name=$(uname -m 2>/dev/null)
 	[ $? -ne 0 ] && { print_error "Could not get the machine hardware name, platform support can't be determined." ; return 1 ; }
 
 	[ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "aarch64" ] && return 0
@@ -83,16 +83,16 @@ function set_home_var {
 	# Sets the HOME environment variable to the current user's home directory
 
 	local kernel_name
-	kernel_name=$(uname -s)
+	kernel_name=$(uname -s 2>/dev/null)
 
 	if [ "$kernel_name" == "Linux" ]
 	then
-		export HOME=$(getent passwd "$CURRENT_USER" | cut -d: -f6)
+		export HOME=$(getent passwd "$CURRENT_USER" 2>/dev/null | cut -d: -f6 2>/dev/null)
 	fi
 	
 	if [ "$kernel_name" == "Darwin" ]
 	then
-		export HOME=$(dscl . -read "/Users/${CURRENT_USER}" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+		export HOME=$(dscl . -read "/Users/${CURRENT_USER}" NFSHomeDirectory 2>/dev/null | awk '{print $2}' 2>/dev/null)
 	fi
 
 	if [ -z "$HOME" ]
@@ -210,9 +210,9 @@ function check_prerequisites {
 
 	# Checks the platform-specific prerequisites for Archy
 	local kernel_name
-	kernel_name=$(uname -s)
+	kernel_name=$(uname -s 2>/dev/null)
 	local machine_hardware_name
-	machine_hardware_name=$(uname -m)
+	machine_hardware_name=$(uname -m 2>/dev/null)
 
 	# Checks if Rosetta 2 is installed when running on macOS on Apple Silicon
 	if [ "$kernel_name" == "Darwin" ] && [ "$machine_hardware_name" == "arm64" ]
@@ -258,7 +258,7 @@ function check_prerequisites {
 		local binfmt_entry
 		local amd64_emulation_enabled=1
 
-		if [ -d "$binfmt_dir" ] && grep -q "enabled" "${binfmt_dir}/status" 2>/dev/null
+		if [ -d "$binfmt_dir" ] && grep -q "^enabled$" "${binfmt_dir}/status" 2>/dev/null
 		then
 			for binfmt_entry in "${binfmt_dir}"/*
 			do
@@ -268,7 +268,7 @@ function check_prerequisites {
 				esac
 
 				# An enabled handler whose ELF magic targets the x86_64 machine type (e_machine 0x3e) can run amd64 binaries
-				if grep -q "^enabled" "$binfmt_entry" 2>/dev/null && grep -qiE "^magic 7f454c46[0-9a-f]*3e00" "$binfmt_entry" 2>/dev/null
+				if grep -q "^enabled$" "$binfmt_entry" 2>/dev/null && grep -qiE "^magic 7f454c46[0-9a-f]*3e00" "$binfmt_entry" 2>/dev/null
 				then
 					amd64_emulation_enabled=0
 					break
@@ -278,7 +278,7 @@ function check_prerequisites {
 
 		if [ $amd64_emulation_enabled -ne 0 ]
 		then
-			print_error "Archy on Linux on ARM architecture requires an emulation layer to run x86_64 (amd64) binaries, but no enabled \"binfmt_misc\" handler for x86_64 was found. Please configure an x86_64 emulation layer (for example Rosetta when running in a virtual machine, or qemu-user-static) and run the toolkit installer again."
+			print_error "Archy on Linux on ARM architecture requires an emulation layer to run x86_64 (amd64) binaries, but no enabled \"binfmt_misc\" handler for x86_64 was found. Please configure an x86_64 emulation layer (for example Rosetta 2 when running in a virtual machine, or qemu-user-static) and run the toolkit installer again."
 			return 1
 		fi
 	fi
@@ -319,8 +319,8 @@ function install_go {
 
 	# Generates the Go binary release name
 
-	local kernel_name=$(uname -s)
-	local machine_hardware_name=$(uname -m)
+	local kernel_name=$(uname -s 2>/dev/null)
+	local machine_hardware_name=$(uname -m 2>/dev/null)
 
 	[ "$kernel_name" == "Linux" ] && kernel_name="linux"
 	[ "$kernel_name" == "Darwin" ] && kernel_name="darwin"
@@ -353,10 +353,10 @@ function install_go {
 
 		if [ $exit_code -ne 0 ]
 		then
-			print_error "Could not create the Go installation directory \"${GO_INSTALL_DIR}."
+			print_error "Could not create the Go installation directory \"${GO_INSTALL_DIR}\"."
 			return $exit_code
 		else
-			print_info "Successfully created the Go installation directory \"${GO_INSTALL_DIR}."
+			print_info "Successfully created the Go installation directory \"${GO_INSTALL_DIR}\"."
 			GO_INSTALL_DIR_CREATED_BY_INSTALLER=1
 		fi
 	fi
@@ -443,9 +443,9 @@ function install_cli {
 
 	# Verifies that the Genesys Cloud Platform API CLI binary was built
 
-	if [ ! -f "$(go env GOPATH)/bin/gc" ]
+	if [ ! -f "$(go env GOPATH 2>/dev/null)/bin/gc" ]
 	then
-		print_error "Genesys Cloud Platform API CLI binary not found in \"$(go env GOPATH)/bin/gc\"."
+		print_error "Genesys Cloud Platform API CLI binary not found in \"$(go env GOPATH 2>/dev/null)/bin/gc\"."
 		return 1
 	fi
 
@@ -468,16 +468,16 @@ function install_cli {
 
 	# Copies the Genesys Cloud Platform API CLI to the installation directory
 
-	cp "$(go env GOPATH)/bin/gc" "${CLI_INSTALL_DIR}" 1>/dev/null 2>/dev/null
+	cp "$(go env GOPATH 2>/dev/null)/bin/gc" "${CLI_INSTALL_DIR}" 1>/dev/null 2>/dev/null
 	exit_code=$?
 
 	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not copy the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}."
+		print_error "Could not copy the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}\"."
 		return $exit_code
 	fi
 
-	print_info "Successfully copied the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}."
+	print_info "Successfully copied the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}\"."
 	CLI_INSTALLED=1
 
 	return 0
@@ -492,8 +492,8 @@ function install_terraform {
 
 	# Generates the Terraform binary release name
 
-	local kernel_name=$(uname -s)
-	local machine_hardware_name=$(uname -m)
+	local kernel_name=$(uname -s 2>/dev/null)
+	local machine_hardware_name=$(uname -m 2>/dev/null)
 
 	[ "$kernel_name" == "Linux" ] && kernel_name="linux"
 	[ "$kernel_name" == "Darwin" ] && kernel_name="darwin"
@@ -563,30 +563,30 @@ function add_archy_path_to_zprofile {
 	then
 		if [ -z "$SUDO_USER" ]
 		then
-			touch "${HOME}/.zprofile"
+			touch "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 		else
-			sudo -u $SUDO_USER touch "${HOME}/.zprofile"
+			sudo -u "$SUDO_USER" touch "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 		fi
 		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
 	fi
 
 	if [ -s "${HOME}/.zprofile" ]
 	then
-		tail -c1 "${HOME}/.zprofile" | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.zprofile"
+		tail -c1 "${HOME}/.zprofile" 2>/dev/null | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.zprofile" 2>/dev/null
 		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
 	fi
 
 	if [ -f "${HOME}/.zprofile" ]			
 	then
-		printf "# Archy path added by genesys-toolkit-install.sh\n" >> "${HOME}/.zprofile"
-		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.zprofile"
+		printf "# Archy path added by genesys-toolkit-install.sh\n" >> "${HOME}/.zprofile" 2>/dev/null
+		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.zprofile" 2>/dev/null
 		if [ $? -eq 0 ]
 		then
 			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will be globally available to the user \"${CURRENT_USER}\" when using Zsh."
 			return 0
 		else
 			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh."
-			[ $ARCHY_ZPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.zprofile"
+			[ $ARCHY_ZPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 			return 1
 		fi
 	else
@@ -605,30 +605,30 @@ function add_archy_path_to_bash_profile {
 	then
 		if [ -z "$SUDO_USER" ]
 		then
-			touch "${HOME}/.bash_profile"
+			touch "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 		else
-			sudo -u $SUDO_USER touch "${HOME}/.bash_profile"
+			sudo -u "$SUDO_USER" touch "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 		fi
 		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
 	fi
 
 	if [ -s "${HOME}/.bash_profile" ]
 	then
-		tail -c1 "${HOME}/.bash_profile" | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.bash_profile"
+		tail -c1 "${HOME}/.bash_profile" 2>/dev/null | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.bash_profile" 2>/dev/null
 		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
 	fi
 
 	if [ -f "${HOME}/.bash_profile" ]			
 	then
-		printf "# Archy path added by genesys-toolkit-install.sh\n" >> "${HOME}/.bash_profile"
-		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.bash_profile"
+		printf "# Archy path added by genesys-toolkit-install.sh\n" >> "${HOME}/.bash_profile" 2>/dev/null
+		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.bash_profile" 2>/dev/null
 		if [ $? -eq 0 ]
 		then
 			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will be globally available to the user \"${CURRENT_USER}\" when using Bash."
 			return 0
 		else
 			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash."
-			[ $ARCHY_BASHPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.bash_profile"
+			[ $ARCHY_BASHPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 			return 1
 		fi
 	else
@@ -647,8 +647,8 @@ function install_archy {
 
 	# Generates the Archy binary release name and verifies that the platform is supported
 
-	local kernel_name=$(uname -s)
-	local machine_hardware_name=$(uname -m)
+	local kernel_name=$(uname -s 2>/dev/null)
+	local machine_hardware_name=$(uname -m 2>/dev/null)
 	local archy_binary_name=""
 
 	[ "$kernel_name" == "Darwin" ] && archy_binary_name="archy-macos.zip"
@@ -677,7 +677,7 @@ function install_archy {
 	then
 		unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
 	else
-		sudo -u $SUDO_USER unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+		sudo -u "$SUDO_USER" unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
 	fi
 
 	exit_code=$?
@@ -705,9 +705,9 @@ function install_archy {
 
 	if [ -z "$SUDO_USER" ]
 	then
-		( cd ${HOME}/archy && ./archy version 1>/dev/null 2>/dev/null )
+		( cd "${HOME}/archy" && ./archy version 1>/dev/null 2>/dev/null )
 	else
-		( cd ${HOME}/archy && sudo -u $SUDO_USER ./archy version 1>/dev/null 2>/dev/null )
+		( cd "${HOME}/archy" && sudo -u "$SUDO_USER" ./archy version 1>/dev/null 2>/dev/null )
 	fi
 
 	if [ $? -eq 0 ]
@@ -727,7 +727,7 @@ function install_archy {
 
 function cleanup {
 
-	local kernel_name=$(uname -s)
+	local kernel_name=$(uname -s 2>/dev/null)
 
 	if [ $1 -ne 0 ]
 	then
@@ -756,9 +756,9 @@ function cleanup {
 			then
 				if [ "$kernel_name" == "Darwin" ]
 				then
-					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 				else
-					sed -i -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+					sed -i -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 				fi
 				if [ $? -eq 0 ]
 				then
@@ -778,9 +778,9 @@ function cleanup {
 			then
 				if [ "$kernel_name" == "Darwin" ]
 				then
-					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
+					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 				else
-					sed -i -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
+					sed -i -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 				fi
 				if [ $? -eq 0 ]
 				then
@@ -852,7 +852,7 @@ function cleanup {
 
 		if [ $GO_INSTALLED -eq 1 ]
 		then
-			local go_path="$(go env GOPATH)"
+			local go_path="$(go env GOPATH 2>/dev/null)"
 			rm -Rf "$go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${go_path}\"." || print_error "Could not remove the Go workspace directory \"${go_path}\"."
 			rm -Rf "${GO_INSTALL_DIR}/go" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go installation directory \"${GO_INSTALL_DIR}/go\"." || print_error "Could not remove the Go installation directory \"${GO_INSTALL_DIR}/go\"."
 		fi
@@ -864,7 +864,7 @@ function cleanup {
 
 		if [ $GO_INSTALLED -eq 1 ]
 		then
-			local go_path="$(go env GOPATH)"
+			local go_path="$(go env GOPATH 2>/dev/null)"
 			rm -Rf "$go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${go_path}\"." || print_error "Could not remove the Go workspace directory \"${go_path}\"."
 		fi
 	fi
