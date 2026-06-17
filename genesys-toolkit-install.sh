@@ -200,6 +200,82 @@ function check_prerequisites {
 		return 1
 	fi
 
+	# Checks the platform-specific prerequisites for Archy
+	local kernel_name
+	kernel_name=$(uname -s)
+	local machine_hardware_name
+	machine_hardware_name=$(uname -m)
+
+	# Checks if Rosetta 2 is installed when running on macOS on Apple Silicon
+	if [ "$kernel_name" == "Darwin" ] && [ "$machine_hardware_name" == "arm64" ]
+	then
+		pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto 1>/dev/null 2>/dev/null
+		if [ $? -ne 0 ]
+		then
+			print_error "Rosetta 2 is required to run Archy on macOS on Apple Silicon, but it is not installed. Please install Rosetta 2 and run the toolkit installer again."
+			return 1
+		fi
+	fi
+
+	# Checks the amd64 prerequisites for Archy when running on Linux on ARM architecture.
+	if [ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "aarch64" ]
+	then
+		if command -v dpkg 1>/dev/null 2>/dev/null && command -v dpkg-query 1>/dev/null 2>/dev/null
+		then
+			# Checks if the amd64 architecture is enabled in dpkg
+			dpkg --print-foreign-architectures 2>/dev/null | grep -qw "amd64"
+			if [ $? -ne 0 ]
+			then
+				print_error "Archy on Linux on ARM architecture requires the \"amd64\" architecture to run its x86_64 binary, but it is not enabled. Please run \"dpkg --add-architecture amd64\", install the amd64 versions of the \"libc6\" and \"libstdc++6\" packages, and run the toolkit installer again."
+				return 1
+			fi
+
+			# Checks if the amd64 versions of the libc6 and libstdc++6 packages are installed
+			local amd64_package
+			for amd64_package in "libc6:amd64" "libstdc++6:amd64"
+			do
+				dpkg-query -W -f='${Status}' "$amd64_package" 2>/dev/null | grep -q "install ok installed"
+				if [ $? -ne 0 ]
+				then
+					print_error "Archy on Linux on ARM architecture requires the \"${amd64_package}\" package to run its x86_64 binary, but it is not installed. Please install the amd64 versions of the \"libc6\" and \"libstdc++6\" packages and run the toolkit installer again."
+					return 1
+				fi
+			done
+		else
+			print_warn "Archy on Linux on ARM architecture requires the amd64 versions of the \"libc6\" and \"libstdc++6\" libraries to run its x86_64 binary. The \"dpkg\" command is not available, so these prerequisites could not be verified automatically. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
+		fi
+
+		# Checks if the kernel can run x86_64 (amd64) binaries through an emulation layer registered
+		# with binfmt_misc (for example Rosetta in a virtual machine, or qemu-user-static)
+		local binfmt_dir="/proc/sys/fs/binfmt_misc"
+		local binfmt_entry
+		local amd64_emulation_enabled=1
+
+		if [ -d "$binfmt_dir" ] && grep -q "enabled" "${binfmt_dir}/status" 2>/dev/null
+		then
+			for binfmt_entry in "${binfmt_dir}"/*
+			do
+				[ -f "$binfmt_entry" ] || continue
+				case "$binfmt_entry" in
+					"${binfmt_dir}/status" | "${binfmt_dir}/register") continue ;;
+				esac
+
+				# An enabled handler whose ELF magic targets the x86_64 machine type (e_machine 0x3e) can run amd64 binaries
+				if grep -q "^enabled" "$binfmt_entry" 2>/dev/null && grep -qiE "^magic 7f454c46[0-9a-f]*3e00" "$binfmt_entry" 2>/dev/null
+				then
+					amd64_emulation_enabled=0
+					break
+				fi
+			done
+		fi
+
+		if [ $amd64_emulation_enabled -ne 0 ]
+		then
+			print_error "Archy on Linux on ARM architecture requires an emulation layer to run x86_64 (amd64) binaries, but no enabled \"binfmt_misc\" handler for x86_64 was found. Please configure an x86_64 emulation layer (for example Rosetta when running in a virtual machine, or qemu-user-static) and run the toolkit installer again."
+			return 1
+		fi
+	fi
+
 	return 0
 }
 
@@ -571,26 +647,7 @@ function install_archy {
 	[ "$kernel_name" == "Darwin" ] && archy_binary_name="archy-macos.zip"
 	[ "$kernel_name" == "Linux" ] && archy_binary_name="archy-linux.zip"
 
-	[ -z "$archy_binary_name" ] && { print_warn "Archy does not support the \"${kernel_name} on ${machine_hardware_name}\" platform, skipping the Archy installation." ; return 0 ; }
-
-	# Checks if the script is running on macOS on Apple Silicon and Rosetta 2 is installed
-	if [ "$kernel_name" == "Darwin" ] && [ "$machine_hardware_name" == "arm64" ]
-	then
-		pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto 1>/dev/null 2>/dev/null
-
-		exit_code=$?
-
-		if [ $exit_code -ne 0 ]
-		then
-			print_error "Rosetta 2 is required to run Archy on macOS on Apple Silicon, but it is not installed. Please install Rosetta 2 and run the toolkit installer again."
-			return $exit_code
-		fi
-	fi
-
-	# Checks if the script is running on Linux on ARM architecture
-	[ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "aarch64" ] && print_warn "Archy on Linux on ARM architecture requires emulation to run x86_64 binaries. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
-
-	# TODO: Implement additional checks when the script is running on Linux on ARM architecture
+	[ -z "$archy_binary_name" ] && { print_warn "Archy does not support the \"${kernel_name} platform on ${machine_hardware_name}\" architecture, skipping the Archy installation." ; return 0 ; }
 
 	# Downloads Archy
 
