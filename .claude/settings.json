@@ -1,0 +1,35 @@
+{
+	"$schema": "https://json.schemastore.org/claude-code-settings.json",
+	"permissions": {
+		"deny": [
+			"Read(.env)",
+			"Read(/.git/config)",
+			"Edit(.env)",
+			"Edit(/.claude/settings.json)",
+			"Edit(/.claude/settings.local.json)",
+			"Edit(/.claude/agents/**)",
+			"Edit(/.claude/commands/**)",
+			"Edit(/.claude/hooks/**)",
+			"Edit(/.claude/plugins/**)",
+			"Edit(/.claude/skills/**)",
+			"Edit(/.git/config)",
+			"Edit(/.git/hooks/**)",
+			"Edit(/.git/modules/**)"
+		]
+	},
+	"sandbox": {
+		"filesystem": {
+			"denyRead": [
+				"./.env"
+			],
+			"denyWrite": [
+				"./.env",
+				"./.claude",
+				"./.git/config",
+				"./.git/hooks",
+				"./.git/modules"
+			]
+		}
+	},
+	"respectGitignore": true
+}
