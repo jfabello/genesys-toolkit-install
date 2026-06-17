@@ -5,17 +5,17 @@
 TMP_DIR="" # Temporary directory, set automatically by the create_tmp_dir function
 
 GO_INSTALL_DIR="/usr/local" # Go installation directory
-GO_INSTALL_DIR_CREATED=0 # Go installation directory creation status
+GO_INSTALL_DIR_CREATED_BY_INSTALLER=0 # Go installation directory creation status
 GO_VERSION="1.26.2" # Go version to be installed
 GO_INSTALLED=0 # Go installation status
 
-CLI_INSTALL_DIR="/usr/local/bin" # Genesys Cloud CLI installation directory
-CLI_INSTALL_DIR_CREATED=0 # Genesys Cloud CLI installation directory creation status
-CLI_VERSION="159.0.0" # Genesys Cloud CLI version to be installed
-CLI_INSTALLED=0 # Genesys Cloud CLI installation status
+CLI_INSTALL_DIR="/usr/local/bin" # Genesys Cloud Platform API CLI installation directory
+CLI_INSTALL_DIR_CREATED_BY_INSTALLER=0 # Genesys Cloud Platform API CLI installation directory creation status
+CLI_VERSION="159.0.0" # Genesys Cloud Platform API CLI version to be installed
+CLI_INSTALLED=0 # Genesys Cloud Platform API CLI installation status
 
 TERRAFORM_INSTALL_DIR="/usr/local/bin" # Terraform installation directory
-TERRAFORM_INSTALL_DIR_CREATED=0 # Terraform installation directory creation status
+TERRAFORM_INSTALL_DIR_CREATED_BY_INSTALLER=0 # Terraform installation directory creation status
 TERRAFORM_VERSION="1.14.8" # Terraform version to be installed
 TERRAFORM_INSTALLED=0 # Terraform installation status
 
@@ -23,51 +23,36 @@ ARCHY_ZPROFILE_CREATED=0 # .zprofile creation status
 ARCHY_BASHPROFILE_CREATED=0 # .bash_profile creation status
 ARCHY_INSTALLED=0 # Archy installation status
 
-
 # FUNCTION report_info:
 # Prints an informational message to stdout
-# arg1: Informational message.
-
+# $1: Informational message.
 function print_info {
 	printf "\e[1;97mINFO: \e[0m$1\n"
 }
 
-
 # FUNCTION report_warn:
 # Prints a warning message to stdout
-# arg1: Warning message.
-
+# $1: Warning message.
 function print_warn {
 	printf "\e[1;93mWARN: \e[0m$1\n"
 }
 
-
 # FUNCTION report_info:
 # Prints an error message to stderr
-# arg1: Error message.
-
+# $: Error message.
 function print_error {
 	printf "\e[1;91mERROR: \e[0m$1\n" >&2
 }
 
-
-# FUNCTION generate_timestamp
-# Generates the current timestamp in the following format: YYYYMMDD-HHMMSS
-
-function generate_timestamp {
-	date +%Y%m%d-%H%M%S
-}
-
-
 # FUNCTION check_platform
 # Checks if the platform is supported
-
 function check_platform {
-
-	local kernel_name=$(uname -s)
+	local kernel_name
+	kernel_name=$(uname -s)
 	[ $? -ne 0 ] && { print_error "Could not get the kernel name, platform support can't be determined." ; return 1 ; }
 
-	local machine_hardware_name=$(uname -m)
+	local machine_hardware_name
+	machine_hardware_name=$(uname -m)
 	[ $? -ne 0 ] && { print_error "Could not get the machine hardware name, platform support can't be determined." ; return 1 ; }
 
 	[ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "aarch64" ] && return 0
@@ -81,7 +66,6 @@ function check_platform {
 
 # FUNCTION set_current_user
 # Sets the CURRENT_USER environment variable
-
 function set_current_user {
 	if [ -z "$SUDO_USER" ]
 	then
@@ -93,12 +77,9 @@ function set_current_user {
 	return 0
 }
 
-
 # FUNCTION set_home_var
 # Sets the HOME environment variable
-
 function set_home_var {
-
 	# Sets the HOME environment variable to the user's home when the kernel is Linux
 
 	if [ "$(uname -s)" == "Linux" ]
@@ -115,14 +96,10 @@ function set_home_var {
 	return 0
 }
 
-
 # FUNCTION check_prerequisites
 # Checks the prerequisites, including that no previous toolkits are installed
-
 function check_prerequisites {
-	
 	# Checks if the script is being run as root.
-
 	if [ "$EUID" -ne 0 ]
 	then
 		print_error "This script must be run as root."
@@ -130,89 +107,78 @@ function check_prerequisites {
 	fi
 
 	# Checks if curl is available
-
 	command -v curl 1>/dev/null 2>/dev/null
 	if [ $? -ne 0 ]
 	then 
-		print_error "\"curl\" command is not available."
+		print_error "The \"curl\" command is not available."
 		return 1
 	fi
 
 	# Checks if unzip is available
-
 	command -v unzip 1>/dev/null 2>/dev/null
 	if [ $? -ne 0 ]
 	then 
-		print_error "\"unzip\" command is not available."
+		print_error "The \"unzip\" command is not available."
 		return 1
 	fi
 
-	# Checks if the Go installation directory does not exist, or does exist and is a directory
-
+	# Checks if the Go installation directory already exists and is not a directory
 	if [ -e "$GO_INSTALL_DIR" ] && [ ! -d "$GO_INSTALL_DIR" ]
 	then
 		print_error "The Go installation directory \"${GO_INSTALL_DIR}\" already exists and is not a directory."
 		return 1
 	fi
 
-	# Checks if Go is not installed
-
+	# Checks if Go is already installed
 	if [ -e "${GO_INSTALL_DIR}/go" ]
 	then
 		print_error "Go is already installed in \"$GO_INSTALL_DIR\"."
 		return 1
 	fi
 
-	# Checks if the Go path shell script golang-path.sh does not exist in the /etc/profile.d directory
-
+	# Checks if the Go path shell script golang-path.sh already exists in the /etc/profile.d directory
 	if [ -e "/etc/profile.d/golang-path.sh" ]
 	then
 		print_error "The shell script \"golang-path.sh\" already exists in the \"/etc/profile.d\" directory."
 		return 1
 	fi
 
-	# Checks if the Go path file golang-path does not exist in the /etc/paths.d directory
-
+	# Checks if the Go path file golang-path already exists in the /etc/paths.d directory
 	if [ -e "/etc/paths.d/golang-path" ]
 	then
 		print_error "The file \"golang-path.sh\" already exists in the \"/etc/paths.d\" directory."
 		return 1
 	fi
 
-	# Checks if the Genesys Cloud CLI installation directory does not exist, or does exist and is a directory
-
+	# Checks if the Genesys Cloud Platform API CLI installation directory already exists and is not a directory
 	if [ -e "$CLI_INSTALL_DIR" ] && [ ! -d "$CLI_INSTALL_DIR" ]
 	then
-		print_error "The Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\" already exists and is not a directory."
+		print_error "The Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\" already exists and is not a directory."
 		return 1
 	fi
 
-	# Checks if the Genesys Cloud CLI is not installed
-
+	# Checks if the Genesys Cloud Platform API CLI is already installed
 	if [ -e "${CLI_INSTALL_DIR}/gc" ]
 	then
-		print_error "The Genesys Cloud CLI is already installed in \"${CLI_INSTALL_DIR}\"."
+		print_error "The Genesys Cloud Platform API CLI is already installed in \"${CLI_INSTALL_DIR}\"."
 		return 1
 	fi
 
-	# Checks if the Terraform installation directory does not exist, or does exist and is a directory
-
+	# Checks if the Terraform installation directory already exists and is not a directory
 	if [ -e "$TERRAFORM_INSTALL_DIR" ] && [ ! -d "$TERRAFORM_INSTALL_DIR" ]
 	then
 		print_error "The Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\" already exists and is not a directory."
 		return 1
 	fi
 
-	# Checks if Terraform is not installed
-
+	# Checks if Terraform is already installed
 	if [ -e "${TERRAFORM_INSTALL_DIR}/terraform" ]
 	then
 		print_error "Terraform is already installed in \"$TERRAFORM_INSTALL_DIR\"."
 		return 1
 	fi
 
-	# Checks if Archy is not installed
-
+	# Checks if Archy is already installed
 	if [ -e "${HOME}/archy" ]
 	then
 		print_error "Archy is already installed in \"$HOME\"."
@@ -225,28 +191,23 @@ function check_prerequisites {
 
 # FUNCTION create_tmp_dir
 # Creates a temporary directory and sets the global environment variable TMP_DIR
-
 function create_tmp_dir {
-
 	local exit_code=0
 
-	local tmp_dir="/tmp/genesys-toolkit-install-$(generate_timestamp)"
+	local tmp_dir
+	tmp_dir=$(mktemp -d genesys-toolkit-install-XXXXXX 2>/dev/null)
 
-	print_info "Creating the temporary directory \"$tmp_dir\"..."
-	mkdir "$tmp_dir" 1>/dev/null 2>/dev/null
-	
 	exit_code=$?
 	
 	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not create the temporary directory \"$tmp_dir\"."
+		print_error "Could not create the temporary directory."
 		return $exit_code
 	fi
 
-	print_info "Successfully created the temporary directory \"$tmp_dir\"."
-	
 	TMP_DIR="$tmp_dir"
 
+	print_info "Successfully created the temporary directory \"$tmp_dir\"."
 	return 0
 }
 
@@ -298,7 +259,7 @@ function install_go {
 			return $exit_code
 		else
 			print_info "Successfully created the Go installation directory \"${GO_INSTALL_DIR}."
-			GO_INSTALL_DIR_CREATED=1
+			GO_INSTALL_DIR_CREATED_BY_INSTALLER=1
 		fi
 	fi
 
@@ -367,36 +328,35 @@ function install_go {
 
 
 # FUNCTION install_cli
-# Installs the Genesys Cloud CLI in the directory specified by CLI_INSTALL_DIR
-
+# Installs the Genesys Cloud Platform API CLI in the directory specified by CLI_INSTALL_DIR
 function install_cli {
 
 	local exit_code=0
 
-	# Builds the Genesys Cloud CLI with Go
+	# Builds the Genesys Cloud Platform API CLI with Go
 
-	print_info "Building the Genesys Cloud CLI with Go..."
+	print_info "Building the Genesys Cloud Platform API CLI with Go..."
 	go install "github.com/mypurecloud/platform-client-sdk-cli/build/gc@${CLI_VERSION}" 1>/dev/null 2>/dev/null
 
 	exit_code=$?
 
 	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not build the Genesys Cloud CLI."
+		print_error "Could not build the Genesys Cloud Platform API CLI."
 		return $exit_code
 	fi
 
-	print_info "Successfully built the Genesys Cloud CLI."
+	print_info "Successfully built the Genesys Cloud Platform API CLI."
 
-	# Verifies that the Genesys Cloud CLI binary was built
+	# Verifies that the Genesys Cloud Platform API CLI binary was built
 
 	if [ ! -f "$(go env GOPATH)/bin/gc" ]
 	then
-		print_error "Genesys Cloud CLI binary not found in \"$(go env GOPATH)/bin/gc\"."
+		print_error "Genesys Cloud Platform API CLI binary not found in \"$(go env GOPATH)/bin/gc\"."
 		return 1
 	fi
 
-	# Creates the Genesys Cloud CLI installation directory if needed
+	# Creates the Genesys Cloud Platform API CLI installation directory if needed
 
 	if [ ! -e "$CLI_INSTALL_DIR" ]
 	then
@@ -405,26 +365,26 @@ function install_cli {
 
 		if [ $exit_code -ne 0 ]
 		then
-			print_error "Could not create the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
+			print_error "Could not create the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\"."
 			return $exit_code
 		else
-			print_info "Successfully created the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
-			CLI_INSTALL_DIR_CREATED=1
+			print_info "Successfully created the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\"."
+			CLI_INSTALL_DIR_CREATED_BY_INSTALLER=1
 		fi
 	fi
 
-	# Copies the Genesys Cloud CLI to the installation directory
+	# Copies the Genesys Cloud Platform API CLI to the installation directory
 
 	cp "$(go env GOPATH)/bin/gc" "${CLI_INSTALL_DIR}" 1>/dev/null 2>/dev/null
 	exit_code=$?
 
 	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not copy the Genesys Cloud CLI to the installation directory \"${CLI_INSTALL_DIR}."
+		print_error "Could not copy the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}."
 		return $exit_code
 	fi
 
-	print_info "Successfully copied the Genesys Cloud CLI to the installation directory \"${CLI_INSTALL_DIR}."
+	print_info "Successfully copied the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}."
 	CLI_INSTALLED=1
 
 	return 0
@@ -433,7 +393,6 @@ function install_cli {
 
 # FUNCTION install_terraform
 # Installs Terraform in the directory specified by TERRAFORM_INSTALL_DIR
-
 function install_terraform {
 
 	local exit_code=0
@@ -755,25 +714,25 @@ function cleanup {
 			rm -f "${TERRAFORM_INSTALL_DIR}/terraform" 1>/dev/null 2>/dev/null && print_info "Successfully removed Terraform from \"${TERRAFORM_INSTALL_DIR}\"." || print_error "Could not remove Terraform from \"${TERRAFORM_INSTALL_DIR}\"."
 		fi
 
-		# Removes the Terraform installation directory if it was created by this script
+		# Removes the Terraform installation directory if it was created by this script and is empty
 
-		if [ $TERRAFORM_INSTALL_DIR_CREATED -eq 1 ]
+		if [ $TERRAFORM_INSTALL_DIR_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			rm -Rf "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"." || print_error "Could not remove the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"."
+			rmdir "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"." || print_warn "Did not remove the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\" because it is not empty or could not be removed."
 		fi
 
-		# Removes the Genesys Cloud CLI
+		# Removes the Genesys Cloud Platform API CLI
 
 		if [ $CLI_INSTALLED -eq 1 ]
 		then
-			rm -f "${CLI_INSTALL_DIR}/gc" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud CLI from \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud CLI from \"${CLI_INSTALL_DIR}\"."
+			rm -f "${CLI_INSTALL_DIR}/gc" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud Platform API CLI from \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud Platform API CLI from \"${CLI_INSTALL_DIR}\"."
 		fi
 
-		# Removes the Genesys Cloud CLI installation directory if it was created by this script
+		# Removes the Genesys Cloud Platform API CLI installation directory if it was created by this script and is empty
 
-		if [ $CLI_INSTALL_DIR_CREATED -eq 1 ]
+		if [ $CLI_INSTALL_DIR_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			rm -Rf "$CLI_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
+			rmdir "$CLI_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\"." || print_warn "Did not remove the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\" because it is not empty or could not be removed."
 		fi
 
 		# Removes Go from the global path
@@ -850,15 +809,13 @@ create_tmp_dir || { cleanup $? ; exit $? ; }
 # Installs Go, runs cleanup and terminates the script if the exit code is not zero
 install_go || { cleanup $? ; exit $? ; }
 
-# Installs the Genesys Cloud CLI, runs cleanup and terminates the script if the exit code is not zero
+# Installs the Genesys Cloud Platform API CLI, runs cleanup and terminates the script if the exit code is not zero
 install_cli || { cleanup $? ; exit $? ; }
 
 # Installs Terraform, runs cleanup and terminates the script if the exit code is not zero
-
 install_terraform || { cleanup $? ; exit $? ; }
 
 # Installs Archy, runs cleanup and terminates the script if the exit code is not zero
-
 install_archy || { cleanup $? ; exit $? ; }
 
 # Runs cleanup without rollback
