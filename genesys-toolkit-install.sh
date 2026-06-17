@@ -64,18 +64,18 @@ function generate_timestamp {
 
 function check_platform {
 
-	local local_kernel_name=$(uname -s)
+	local kernel_name=$(uname -s)
 	[ $? -ne 0 ] && { print_error "Could not get the kernel name, platform support can't be determined." ; return 1 ; }
 
-	local local_machine_hardware_name=$(uname -m)
+	local machine_hardware_name=$(uname -m)
 	[ $? -ne 0 ] && { print_error "Could not get the machine hardware name, platform support can't be determined." ; return 1 ; }
 
-	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && return 0
-	[ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "arm64" ] && return 0
-	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "x86_64" ] && return 0
-	[ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "x86_64" ] && return 0
+	[ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "aarch64" ] && return 0
+	[ "$kernel_name" == "Darwin" ] && [ "$machine_hardware_name" == "arm64" ] && return 0
+	[ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "x86_64" ] && return 0
+	[ "$kernel_name" == "Darwin" ] && [ "$machine_hardware_name" == "x86_64" ] && return 0
 
-	print_error "\"${local_kernel_name} on ${local_machine_hardware_name}\" is not a supported platform."
+	print_error "\"${kernel_name} on ${machine_hardware_name}\" is not a supported platform."
 	return 1
 }
 
@@ -228,24 +228,24 @@ function check_prerequisites {
 
 function create_tmp_dir {
 
-	local local_exit_code=0
+	local exit_code=0
 
-	local local_tmp_dir="/tmp/genesys-toolkit-install-$(generate_timestamp)"
+	local tmp_dir="/tmp/genesys-toolkit-install-$(generate_timestamp)"
 
-	print_info "Creating the temporary directory \"$local_tmp_dir\"..."
-	mkdir "$local_tmp_dir" 1>/dev/null 2>/dev/null
+	print_info "Creating the temporary directory \"$tmp_dir\"..."
+	mkdir "$tmp_dir" 1>/dev/null 2>/dev/null
 	
-	local_exit_code=$?
+	exit_code=$?
 	
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not create the temporary directory \"$local_tmp_dir\"."
-		return $local_exit_code
+		print_error "Could not create the temporary directory \"$tmp_dir\"."
+		return $exit_code
 	fi
 
-	print_info "Successfully created the temporary directory \"$local_tmp_dir\"."
+	print_info "Successfully created the temporary directory \"$tmp_dir\"."
 	
-	TMP_DIR="$local_tmp_dir"
+	TMP_DIR="$tmp_dir"
 
 	return 0
 }
@@ -256,46 +256,46 @@ function create_tmp_dir {
 
 function install_go {
 
-	local local_exit_code=0
+	local exit_code=0
 
 	# Generates the Go binary release name
 
-	local local_kernel_name=$(uname -s)
-	local local_machine_hardware_name=$(uname -m)
+	local kernel_name=$(uname -s)
+	local machine_hardware_name=$(uname -m)
 
-	[ "$local_kernel_name" == "Linux" ] && local_kernel_name="linux"
-	[ "$local_kernel_name" == "Darwin" ] && local_kernel_name="darwin"
-	[ "$local_machine_hardware_name" == "aarch64" ] && local_machine_hardware_name="arm64"
-	[ "$local_machine_hardware_name" == "x86_64" ] && local_machine_hardware_name="amd64"
+	[ "$kernel_name" == "Linux" ] && kernel_name="linux"
+	[ "$kernel_name" == "Darwin" ] && kernel_name="darwin"
+	[ "$machine_hardware_name" == "aarch64" ] && machine_hardware_name="arm64"
+	[ "$machine_hardware_name" == "x86_64" ] && machine_hardware_name="amd64"
 
-	local local_go_binary_name="go${GO_VERSION}.${local_kernel_name}-${local_machine_hardware_name}.tar.gz"
+	local go_binary_name="go${GO_VERSION}.${kernel_name}-${machine_hardware_name}.tar.gz"
 
 	# Downloads Go
 
-	print_info "Downloading Go ${GO_VERSION} from https://go.dev/dl/${local_go_binary_name}..."
-	curl -L --fail -o "${TMP_DIR}/${local_go_binary_name}" "https://go.dev/dl/${local_go_binary_name}" 2>/dev/null
+	print_info "Downloading Go ${GO_VERSION} from https://go.dev/dl/${go_binary_name}..."
+	curl -L --fail -o "${TMP_DIR}/${go_binary_name}" "https://go.dev/dl/${go_binary_name}" 2>/dev/null
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not download Go ${GO_VERSION} from https://go.dev/dl/${local_go_binary_name}."
-		return $local_exit_code
+		print_error "Could not download Go ${GO_VERSION} from https://go.dev/dl/${go_binary_name}."
+		return $exit_code
 	fi
 
-	print_info "Successfully downloaded Go ${GO_VERSION} from https://go.dev/dl/${local_go_binary_name}."
+	print_info "Successfully downloaded Go ${GO_VERSION} from https://go.dev/dl/${go_binary_name}."
 
 	# Creates the Go installation directory if needed
 
 	if [ ! -e "$GO_INSTALL_DIR" ]
 	then
 		mkdir -p "$GO_INSTALL_DIR" 1>/dev/null 2>/dev/null
-		local_exit_code=$?
+		exit_code=$?
 
-		if [ $local_exit_code -ne 0 ]
+		if [ $exit_code -ne 0 ]
 		then
 			print_error "Could not create the Go installation directory \"${GO_INSTALL_DIR}."
-			return $local_exit_code
+			return $exit_code
 		else
 			print_info "Successfully created the Go installation directory \"${GO_INSTALL_DIR}."
 			GO_INSTALL_DIR_CREATED=1
@@ -304,14 +304,14 @@ function install_go {
 
 	# Installs Go in the installation directory
 
-	tar -C "$GO_INSTALL_DIR" -zxf "${TMP_DIR}/${local_go_binary_name}" 1>/dev/null 2>/dev/null
+	tar -C "$GO_INSTALL_DIR" -zxf "${TMP_DIR}/${go_binary_name}" 1>/dev/null 2>/dev/null
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
 		print_error "Could not install Go ${GO_VERSION} to \"$GO_INSTALL_DIR\"."
-		return $local_exit_code
+		return $exit_code
 	fi
 
 	print_info "Successfully installed Go ${GO_VERSION} to \"$GO_INSTALL_DIR\"."
@@ -324,11 +324,11 @@ function install_go {
 
 	# Checks if the Go workspace directory does not exist
 
-	local local_go_path="$(go env GOPATH)"
+	local go_path="$(go env GOPATH)"
 
-	if [ -e "$local_go_path" ]
+	if [ -e "$go_path" ]
 	then
-		print_error "The Go workspace directory \"$local_go_path\" already exists."
+		print_error "The Go workspace directory \"$go_path\" already exists."
 		return 1
 	fi
 
@@ -371,19 +371,19 @@ function install_go {
 
 function install_cli {
 
-	local local_exit_code=0
+	local exit_code=0
 
 	# Builds the Genesys Cloud CLI with Go
 
 	print_info "Building the Genesys Cloud CLI with Go..."
 	go install "github.com/mypurecloud/platform-client-sdk-cli/build/gc@${CLI_VERSION}" 1>/dev/null 2>/dev/null
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
 		print_error "Could not build the Genesys Cloud CLI."
-		return $local_exit_code
+		return $exit_code
 	fi
 
 	print_info "Successfully built the Genesys Cloud CLI."
@@ -401,12 +401,12 @@ function install_cli {
 	if [ ! -e "$CLI_INSTALL_DIR" ]
 	then
 		mkdir -p "$CLI_INSTALL_DIR" 1>/dev/null 2>/dev/null
-		local_exit_code=$?
+		exit_code=$?
 
-		if [ $local_exit_code -ne 0 ]
+		if [ $exit_code -ne 0 ]
 		then
 			print_error "Could not create the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
-			return $local_exit_code
+			return $exit_code
 		else
 			print_info "Successfully created the Genesys Cloud CLI installation directory \"${CLI_INSTALL_DIR}\"."
 			CLI_INSTALL_DIR_CREATED=1
@@ -416,12 +416,12 @@ function install_cli {
 	# Copies the Genesys Cloud CLI to the installation directory
 
 	cp "$(go env GOPATH)/bin/gc" "${CLI_INSTALL_DIR}" 1>/dev/null 2>/dev/null
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
 		print_error "Could not copy the Genesys Cloud CLI to the installation directory \"${CLI_INSTALL_DIR}."
-		return $local_exit_code
+		return $exit_code
 	fi
 
 	print_info "Successfully copied the Genesys Cloud CLI to the installation directory \"${CLI_INSTALL_DIR}."
@@ -436,45 +436,45 @@ function install_cli {
 
 function install_terraform {
 
-	local local_exit_code=0
+	local exit_code=0
 
 	# Generates the Terraform binary release name
 
-	local local_kernel_name=$(uname -s)
-	local local_machine_hardware_name=$(uname -m)
+	local kernel_name=$(uname -s)
+	local machine_hardware_name=$(uname -m)
 
-	[ "$local_kernel_name" == "Linux" ] && local_kernel_name="linux"
-	[ "$local_kernel_name" == "Darwin" ] && local_kernel_name="darwin"
-	[ "$local_machine_hardware_name" == "aarch64" ] && local_machine_hardware_name="arm64"
-	[ "$local_machine_hardware_name" == "x86_64" ] && local_machine_hardware_name="amd64"
+	[ "$kernel_name" == "Linux" ] && kernel_name="linux"
+	[ "$kernel_name" == "Darwin" ] && kernel_name="darwin"
+	[ "$machine_hardware_name" == "aarch64" ] && machine_hardware_name="arm64"
+	[ "$machine_hardware_name" == "x86_64" ] && machine_hardware_name="amd64"
 
-	local local_terraform_binary_name="terraform_${TERRAFORM_VERSION}_${local_kernel_name}_${local_machine_hardware_name}.zip"
+	local terraform_binary_name="terraform_${TERRAFORM_VERSION}_${kernel_name}_${machine_hardware_name}.zip"
 
 	# Downloads Terraform
 
-	print_info "Downloading Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}..."
-	curl -L --fail -o "${TMP_DIR}/${local_terraform_binary_name}" "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}" 2>/dev/null
+	print_info "Downloading Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}..."
+	curl -L --fail -o "${TMP_DIR}/${terraform_binary_name}" "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}" 2>/dev/null
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not download Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}."
-		return $local_exit_code
+		print_error "Could not download Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}."
+		return $exit_code
 	fi
 
-	print_info "Successfully downloaded Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${local_terraform_binary_name}."
+	print_info "Successfully downloaded Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}."
 
 	# Installs Terraform in the installation directory
 
-	unzip "${TMP_DIR}/${local_terraform_binary_name}" terraform -d "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
+	unzip "${TMP_DIR}/${terraform_binary_name}" terraform -d "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
 		print_error "Could not install Terraform ${TERRAFORM_VERSION} to \"$TERRAFORM_INSTALL_DIR\"."
-		return $local_exit_code
+		return $exit_code
 	fi
 
 	print_info "Successfully installed Terraform ${TERRAFORM_VERSION} to \"$TERRAFORM_INSTALL_DIR\"."
@@ -574,68 +574,68 @@ function add_archy_path_to_bash_profile {
 
 function install_archy {
 
-	local local_exit_code=0
+	local exit_code=0
 
 	# Generates the Archy binary release name and verifies that the platform is supported
 
-	local local_kernel_name=$(uname -s)
-	local local_machine_hardware_name=$(uname -m)
-	local local_archy_binary_name=""
+	local kernel_name=$(uname -s)
+	local machine_hardware_name=$(uname -m)
+	local archy_binary_name=""
 
-	[ "$local_kernel_name" == "Darwin" ] && local_archy_binary_name="archy-macos.zip"
-	[ "$local_kernel_name" == "Linux" ] && local_archy_binary_name="archy-linux.zip"
+	[ "$kernel_name" == "Darwin" ] && archy_binary_name="archy-macos.zip"
+	[ "$kernel_name" == "Linux" ] && archy_binary_name="archy-linux.zip"
 
-	[ -z "$local_archy_binary_name" ] && { print_warn "Archy does not support the \"${local_kernel_name} on ${local_machine_hardware_name}\" platform, skipping the Archy installation." ; return 0 ; }
+	[ -z "$archy_binary_name" ] && { print_warn "Archy does not support the \"${kernel_name} on ${machine_hardware_name}\" platform, skipping the Archy installation." ; return 0 ; }
 
 	# Checks if the script is running on macOS on Apple Silicon and Rosetta 2 is installed
-	if [ "$local_kernel_name" == "Darwin" ] && [ "$local_machine_hardware_name" == "arm64" ]
+	if [ "$kernel_name" == "Darwin" ] && [ "$machine_hardware_name" == "arm64" ]
 	then
 		pkgutil --pkg-info com.apple.pkg.RosettaUpdateAuto 1>/dev/null 2>/dev/null
 
-		local_exit_code=$?
+		exit_code=$?
 
-		if [ $local_exit_code -ne 0 ]
+		if [ $exit_code -ne 0 ]
 		then
 			print_error "Rosetta 2 is required to run Archy on macOS on Apple Silicon, but it is not installed. Please install Rosetta 2 and run the toolkit installer again."
-			return $local_exit_code
+			return $exit_code
 		fi
 	fi
 
 	# Checks if the script is running on Linux on ARM architecture
-	[ "$local_kernel_name" == "Linux" ] && [ "$local_machine_hardware_name" == "aarch64" ] && print_warn "Archy on Linux on ARM architecture requires emulation to run x86_64 binaries. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
+	[ "$kernel_name" == "Linux" ] && [ "$machine_hardware_name" == "aarch64" ] && print_warn "Archy on Linux on ARM architecture requires emulation to run x86_64 binaries. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
 
 	# TODO: Implement additional checks when the script is running on Linux on ARM architecture
 
 	# Downloads Archy
 
-	print_info "Downloading Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}..."
-	curl -L --fail -o "${TMP_DIR}/${local_archy_binary_name}" "https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}" 2>/dev/null
+	print_info "Downloading Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}..."
+	curl -L --fail -o "${TMP_DIR}/${archy_binary_name}" "https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}" 2>/dev/null
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
-		print_error "Could not download Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}."
-		return $local_exit_code
+		print_error "Could not download Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}."
+		return $exit_code
 	fi
 
-	print_info "Successfully downloaded Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${local_archy_binary_name}."
+	print_info "Successfully downloaded Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}."
 
 	# Installs Archy in the user's home directory
 
 	if [ -z "$SUDO_USER" ]
 	then
-		unzip "${TMP_DIR}/${local_archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+		unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
 	else
-		sudo -u $SUDO_USER unzip "${TMP_DIR}/${local_archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
+		sudo -u $SUDO_USER unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
 	fi
 
-	local_exit_code=$?
+	exit_code=$?
 
-	if [ $local_exit_code -ne 0 ]
+	if [ $exit_code -ne 0 ]
 	then
 		print_error "Could not install Archy to \"${HOME}\"."
-		return $local_exit_code
+		return $exit_code
 	fi
 
 	print_info "Successfully installed Archy to \"${HOME}\"."
@@ -677,7 +677,7 @@ function install_archy {
 
 function cleanup {
 
-	local local_kernel_name=$(uname -s)
+	local kernel_name=$(uname -s)
 
 	if [ $1 -ne 0 ]
 	then
@@ -704,7 +704,7 @@ function cleanup {
 			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
-				if [ $local_kernel_name == "Darwin" ]
+				if [ $kernel_name == "Darwin" ]
 				then
 					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
 				else
@@ -726,7 +726,7 @@ function cleanup {
 			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
-				if [ $local_kernel_name == "Darwin" ]
+				if [ $kernel_name == "Darwin" ]
 				then
 					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
 				else
@@ -802,8 +802,8 @@ function cleanup {
 
 		if [ $GO_INSTALLED -eq 1 ]
 		then
-			local local_go_path="$(go env GOPATH)"
-			rm -Rf "$local_go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${local_go_path}\"." || print_error "Could not remove the Go workspace directory \"${local_go_path}\"."
+			local go_path="$(go env GOPATH)"
+			rm -Rf "$go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${go_path}\"." || print_error "Could not remove the Go workspace directory \"${go_path}\"."
 			rm -Rf "${GO_INSTALL_DIR}/go" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go installation directory \"${GO_INSTALL_DIR}/go\"." || print_error "Could not remove the Go installation directory \"${GO_INSTALL_DIR}/go\"."
 		fi
 
@@ -814,8 +814,8 @@ function cleanup {
 
 		if [ $GO_INSTALLED -eq 1 ]
 		then
-			local local_go_path="$(go env GOPATH)"
-			rm -Rf "$local_go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${local_go_path}\"." || print_error "Could not remove the Go workspace directory \"${local_go_path}\"."
+			local go_path="$(go env GOPATH)"
+			rm -Rf "$go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${go_path}\"." || print_error "Could not remove the Go workspace directory \"${go_path}\"."
 		fi
 	fi
 
