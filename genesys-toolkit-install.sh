@@ -23,23 +23,23 @@ ARCHY_ZPROFILE_CREATED=0 # .zprofile creation status
 ARCHY_BASHPROFILE_CREATED=0 # .bash_profile creation status
 ARCHY_INSTALLED=0 # Archy installation status
 
-# FUNCTION report_info:
+# FUNCTION print_info:
 # Prints an informational message to stdout
 # $1: Informational message.
 function print_info {
 	printf "\e[1;97mINFO: \e[0m$1\n"
 }
 
-# FUNCTION report_warn:
+# FUNCTION print_warn:
 # Prints a warning message to stdout
 # $1: Warning message.
 function print_warn {
 	printf "\e[1;93mWARN: \e[0m$1\n"
 }
 
-# FUNCTION report_info:
+# FUNCTION print_error:
 # Prints an error message to stderr
-# $: Error message.
+# $1: Error message.
 function print_error {
 	printf "\e[1;91mERROR: \e[0m$1\n" >&2
 }
@@ -125,8 +125,16 @@ function check_prerequisites {
 	# Checks if unzip is available
 	command -v unzip 1>/dev/null 2>/dev/null
 	if [ $? -ne 0 ]
-	then 
+	then
 		print_error "The \"unzip\" command is not available."
+		return 1
+	fi
+
+	# Checks if git is available (required by "go install" to fetch the CLI module)
+	command -v git 1>/dev/null 2>/dev/null
+	if [ $? -ne 0 ]
+	then
+		print_error "The \"git\" command is not available."
 		return 1
 	fi
 
@@ -245,8 +253,7 @@ function check_prerequisites {
 			print_warn "Archy on Linux on ARM architecture requires the amd64 versions of the \"libc6\" and \"libstdc++6\" libraries to run its x86_64 binary. The \"dpkg\" command is not available, so these prerequisites could not be verified automatically. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
 		fi
 
-		# Checks if the kernel can run x86_64 (amd64) binaries through an emulation layer registered
-		# with binfmt_misc (for example Rosetta in a virtual machine, or qemu-user-static)
+		# Checks if the kernel can run x86_64 (amd64) binaries through an emulation layer registered with binfmt_misc (for example Rosetta 2 in a virtual machine, or qemu-user-static)
 		local binfmt_dir="/proc/sys/fs/binfmt_misc"
 		local binfmt_entry
 		local amd64_emulation_enabled=1
@@ -747,7 +754,7 @@ function cleanup {
 			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
-				if [ $kernel_name == "Darwin" ]
+				if [ "$kernel_name" == "Darwin" ]
 				then
 					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
 				else
@@ -769,7 +776,7 @@ function cleanup {
 			grep "# Archy path added by genesys-toolkit-install.sh" "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
-				if [ $kernel_name == "Darwin" ]
+				if [ "$kernel_name" == "Darwin" ]
 				then
 					sed -i '' -e '/^# Archy path added by genesys-toolkit-install.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.zprofile"
 				else
