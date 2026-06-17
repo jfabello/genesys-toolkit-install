@@ -80,11 +80,19 @@ function set_current_user {
 # FUNCTION set_home_var
 # Sets the HOME environment variable
 function set_home_var {
-	# Sets the HOME environment variable to the user's home when the kernel is Linux
+	# Sets the HOME environment variable to the current user's home directory
 
-	if [ "$(uname -s)" == "Linux" ]
+	local kernel_name
+	kernel_name=$(uname -s)
+
+	if [ "$kernel_name" == "Linux" ]
 	then
-		export HOME=$(getent passwd $CURRENT_USER | cut -d: -f6)
+		export HOME=$(getent passwd "$CURRENT_USER" | cut -d: -f6)
+	fi
+	
+	if [ "$kernel_name" == "Darwin" ]
+	then
+		export HOME=$(dscl . -read "/Users/${CURRENT_USER}" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
 	fi
 
 	if [ -z "$HOME" ]
@@ -133,6 +141,13 @@ function check_prerequisites {
 	if [ -e "${GO_INSTALL_DIR}/go" ]
 	then
 		print_error "Go is already installed in \"$GO_INSTALL_DIR\"."
+		return 1
+	fi
+
+	# Checks if the Go workspace directory already exists (defaults to $HOME/go)
+	if [ -e "${HOME}/go" ]
+	then
+		print_error "The Go workspace directory \"${HOME}/go\" already exists."
 		return 1
 	fi
 
@@ -283,16 +298,6 @@ function install_go {
 
 	export PATH=$PATH:${GO_INSTALL_DIR}/go/bin
 
-	# Checks if the Go workspace directory does not exist
-
-	local go_path="$(go env GOPATH)"
-
-	if [ -e "$go_path" ]
-	then
-		print_error "The Go workspace directory \"$go_path\" already exists."
-		return 1
-	fi
-
 	# Adds Go to the global path
 
 	if [ -d "/etc/profile.d" ]
@@ -336,7 +341,12 @@ function install_cli {
 	# Builds the Genesys Cloud Platform API CLI with Go
 
 	print_info "Building the Genesys Cloud Platform API CLI with Go..."
-	go install "github.com/mypurecloud/platform-client-sdk-cli/build/gc@${CLI_VERSION}" 1>/dev/null 2>/dev/null
+	if [ -z "$SUDO_USER" ]
+	then
+		go install "github.com/mypurecloud/platform-client-sdk-cli/build/gc@${CLI_VERSION}" 1>/dev/null 2>/dev/null
+	else
+		sudo -u "$SUDO_USER" env "HOME=${HOME}" "PATH=${PATH}" go install "github.com/mypurecloud/platform-client-sdk-cli/build/gc@${CLI_VERSION}" 1>/dev/null 2>/dev/null
+	fi
 
 	exit_code=$?
 
@@ -423,6 +433,23 @@ function install_terraform {
 	fi
 
 	print_info "Successfully downloaded Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}."
+
+	# Creates the Terraform installation directory if needed
+
+	if [ ! -e "$TERRAFORM_INSTALL_DIR" ]
+	then
+		mkdir -p "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
+		exit_code=$?
+
+		if [ $exit_code -ne 0 ]
+		then
+			print_error "Could not create the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"."
+			return $exit_code
+		else
+			print_info "Successfully created the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"."
+			TERRAFORM_INSTALL_DIR_CREATED_BY_INSTALLER=1
+		fi
+	fi
 
 	# Installs Terraform in the installation directory
 
