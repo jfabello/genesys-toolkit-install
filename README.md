@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-The **Genesys Toolkit Installer** is a shell script that automatically installs Genesys Cloud developer tools on supported platforms. It installs the following tools:
+The **Genesys Toolkit Installer** is a set of shell scripts that automatically install Genesys Cloud developer tools on supported platforms. It installs the following tools:
 
 - [Platform API CLI](https://developer.genesys.cloud/devapps/cli/).
 - [CX as Code](https://developer.genesys.cloud/devapps/cx-as-code/).
@@ -10,13 +10,17 @@ The **Genesys Toolkit Installer** is a shell script that automatically installs 
 
 ## What is New
 
+### Version 0.2.0
+
+- Added the `genesys-toolkit-install-unattended.sh` script for unattended installations (for example, cloud-init).
+
 ### Version 0.1.0
 
 - Initial beta version
 
 ## Installation
 
-You can get the script by using `git`:
+You can get the scripts by using `git`:
 
 ```shell
 git clone https://github.com/jfabello/genesys-toolkit-install.git
@@ -24,15 +28,32 @@ git clone https://github.com/jfabello/genesys-toolkit-install.git
 
 ## Usage
 
+> [!WARNING]
+>
+>  Although efforts have been made to make the scripts as safe to use as possible, please test them first on a virtual machine or sandbox as a precaution.
+
+### Interactive installation
+
 Run the script using `sudo`:
 
 ```shell
 sudo genesys-toolkit-install.sh
 ```
 
-> [!WARNING]
->
->  Although efforts have been made to make the script as safe to use as possible, please test the script first on a virtual machine or sandbox as a precaution.
+### Unattended installation
+
+For unattended provisioning (for example, cloud-init), run the unattended installation script as root, passing the target user account as its only argument:
+
+```shell
+genesys-toolkit-install-unattended.sh <target-username>
+```
+
+The user-bound installation steps (the Platform API CLI build and Archy) are performed for the specified account.
+
+The script sends its output to the console and to two log files in the `/var/log/genesys-toolkit-install.XXXXXX` directory, where `XXXXXX` is a random string of characters generated at install time.
+
+- `install.out.log` — standard output.
+- `install.err.log` — standard error.
 
 ## Prerequisites
 
