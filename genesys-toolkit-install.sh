@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## GLOBAL VARIABLES
+# GLOBAL VARIABLES
 
 TMP_DIR="" # Temporary directory, set automatically by the create_tmp_dir function
 
@@ -85,21 +85,10 @@ function set_home_var {
 	local kernel_name
 	kernel_name=$(uname -s 2>/dev/null)
 
-	if [ "$kernel_name" == "Linux" ]
-	then
-		export HOME=$(getent passwd "$CURRENT_USER" 2>/dev/null | cut -d: -f6 2>/dev/null)
-	fi
-	
-	if [ "$kernel_name" == "Darwin" ]
-	then
-		export HOME=$(dscl . -read "/Users/${CURRENT_USER}" NFSHomeDirectory 2>/dev/null | awk '{print $2}' 2>/dev/null)
-	fi
+	[ "$kernel_name" == "Linux" ] && { export HOME=$(getent passwd "$CURRENT_USER" 2>/dev/null | cut -d: -f6 2>/dev/null) ; }
+	[ "$kernel_name" == "Darwin" ] && { export HOME=$(dscl . -read "/Users/${CURRENT_USER}" NFSHomeDirectory 2>/dev/null | awk '{print $2}' 2>/dev/null) ; }
 
-	if [ -z "$HOME" ]
-	then
-		print_error "Could not set the HOME environment variable."
-		return 1
-	fi
+	[ -z "$HOME" ] && { print_error "Could not set the HOME environment variable." ; return 1 ; }
 
 	return 0
 }
@@ -108,105 +97,49 @@ function set_home_var {
 # Checks the prerequisites, including that no previous toolkits are installed
 function check_prerequisites {
 	# Checks if the script is being run as root.
-	if [ "$EUID" -ne 0 ]
-	then
-		print_error "This script must be run as root."
-		return 1
-	fi
+	[ "$EUID" -ne 0 ] && { print_error "This script must be run as root." ; return 1 ; }
 
 	# Checks if curl is available
 	command -v curl 1>/dev/null 2>/dev/null
-	if [ $? -ne 0 ]
-	then 
-		print_error "The \"curl\" command is not available."
-		return 1
-	fi
+	[ $? -ne 0 ] && { print_error "The \"curl\" command is not available." ; return 1 ; }
 
 	# Checks if unzip is available
 	command -v unzip 1>/dev/null 2>/dev/null
-	if [ $? -ne 0 ]
-	then
-		print_error "The \"unzip\" command is not available."
-		return 1
-	fi
+	[ $? -ne 0 ] && { print_error "The \"unzip\" command is not available." ; return 1 ; }
 
 	# Checks if git is available (required by "go install" to fetch the CLI module)
 	command -v git 1>/dev/null 2>/dev/null
-	if [ $? -ne 0 ]
-	then
-		print_error "The \"git\" command is not available."
-		return 1
-	fi
+	[ $? -ne 0 ] && { print_error "The \"git\" command is not available." ; return 1 ; }
 
 	# Checks if the Go installation directory already exists and is not a directory
-	if [ -e "$GO_INSTALL_DIR" ] && [ ! -d "$GO_INSTALL_DIR" ]
-	then
-		print_error "The Go installation directory \"${GO_INSTALL_DIR}\" already exists and is not a directory."
-		return 1
-	fi
+	[ -e "$GO_INSTALL_DIR" ] && [ ! -d "$GO_INSTALL_DIR" ] && { print_error "The Go installation directory \"${GO_INSTALL_DIR}\" already exists and is not a directory." ; return 1 ; }
 
 	# Checks if Go is already installed
-	if [ -e "${GO_INSTALL_DIR}/go" ]
-	then
-		print_error "Go is already installed in \"$GO_INSTALL_DIR\"."
-		return 1
-	fi
+	[ -e "${GO_INSTALL_DIR}/go" ] && { print_error "Go is already installed in \"$GO_INSTALL_DIR\"." ; return 1 ; }
 
 	# Checks if the Go workspace directory already exists (defaults to $HOME/go)
-	if [ -e "${HOME}/go" ]
-	then
-		print_error "The Go workspace directory \"${HOME}/go\" already exists."
-		return 1
-	fi
+	[ -e "${HOME}/go" ] && { print_error "The Go workspace directory \"${HOME}/go\" already exists." ; return 1 ; }
 
 	# Checks if the Go path shell script golang-path.sh already exists in the /etc/profile.d directory
-	if [ -e "/etc/profile.d/golang-path.sh" ]
-	then
-		print_error "The shell script \"golang-path.sh\" already exists in the \"/etc/profile.d\" directory."
-		return 1
-	fi
+	[ -e "/etc/profile.d/golang-path.sh" ] && { print_error "The shell script \"golang-path.sh\" already exists in the \"/etc/profile.d\" directory." ; return 1 ; }
 
 	# Checks if the Go path file golang-path already exists in the /etc/paths.d directory
-	if [ -e "/etc/paths.d/golang-path" ]
-	then
-		print_error "The file \"golang-path.sh\" already exists in the \"/etc/paths.d\" directory."
-		return 1
-	fi
+	[ -e "/etc/paths.d/golang-path" ] && { print_error "The file \"golang-path.sh\" already exists in the \"/etc/paths.d\" directory." ; return 1 ; }
 
 	# Checks if the Genesys Cloud Platform API CLI installation directory already exists and is not a directory
-	if [ -e "$CLI_INSTALL_DIR" ] && [ ! -d "$CLI_INSTALL_DIR" ]
-	then
-		print_error "The Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\" already exists and is not a directory."
-		return 1
-	fi
+	[ -e "$CLI_INSTALL_DIR" ] && [ ! -d "$CLI_INSTALL_DIR" ] && { print_error "The Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\" already exists and is not a directory." ; return 1 ; }
 
 	# Checks if the Genesys Cloud Platform API CLI is already installed
-	if [ -e "${CLI_INSTALL_DIR}/gc" ]
-	then
-		print_error "The Genesys Cloud Platform API CLI is already installed in \"${CLI_INSTALL_DIR}\"."
-		return 1
-	fi
+	[ -e "${CLI_INSTALL_DIR}/gc" ] && { print_error "The Genesys Cloud Platform API CLI is already installed in \"${CLI_INSTALL_DIR}\"." ; return 1 ; }
 
 	# Checks if the Terraform installation directory already exists and is not a directory
-	if [ -e "$TERRAFORM_INSTALL_DIR" ] && [ ! -d "$TERRAFORM_INSTALL_DIR" ]
-	then
-		print_error "The Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\" already exists and is not a directory."
-		return 1
-	fi
+	[ -e "$TERRAFORM_INSTALL_DIR" ] && [ ! -d "$TERRAFORM_INSTALL_DIR" ] && { print_error "The Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\" already exists and is not a directory." ; return 1 ; }
 
 	# Checks if Terraform is already installed
-	if [ -e "${TERRAFORM_INSTALL_DIR}/terraform" ]
-	then
-		print_error "Terraform is already installed in \"$TERRAFORM_INSTALL_DIR\"."
-		return 1
-	fi
+	[ -e "${TERRAFORM_INSTALL_DIR}/terraform" ] && { print_error "Terraform is already installed in \"$TERRAFORM_INSTALL_DIR\"." ; return 1 ; }
 
 	# Checks if Archy is already installed
-	if [ -e "${HOME}/archy" ]
-	then
-		print_error "Archy is already installed in \"$HOME\"."
-		return 1
-	fi
+	[ -e "${HOME}/archy" ] && { print_error "Archy is already installed in \"$HOME\"." ; return 1 ; }
 
 	# Checks the platform-specific prerequisites for Archy
 	local kernel_name
@@ -265,9 +198,8 @@ function check_prerequisites {
 			for binfmt_entry in "${binfmt_dir}"/*
 			do
 				[ -f "$binfmt_entry" ] || continue
-				case "$binfmt_entry" in
-					"${binfmt_dir}/status" | "${binfmt_dir}/register") continue ;;
-				esac
+				[ "$binfmt_entry" == "${binfmt_dir}/status" ] && continue
+				[ "$binfmt_entry" == "${binfmt_dir}/register" ] && continue
 
 				# An enabled handler whose ELF magic targets the x86_64 machine type (e_machine 0x3e) can run amd64 binaries
 				if grep -q "^enabled$" "$binfmt_entry" 2>/dev/null && grep -qiE "^magic 7f454c46[0-9a-f]*3e00" "$binfmt_entry" 2>/dev/null
@@ -288,7 +220,6 @@ function check_prerequisites {
 	return 0
 }
 
-
 # FUNCTION create_tmp_dir
 # Creates a temporary directory and sets the global environment variable TMP_DIR
 function create_tmp_dir {
@@ -299,11 +230,7 @@ function create_tmp_dir {
 
 	exit_code=$?
 	
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not create the temporary directory."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not create the temporary directory." ; return $exit_code ; }
 
 	TMP_DIR="$tmp_dir"
 
@@ -311,10 +238,8 @@ function create_tmp_dir {
 	return 0
 }
 
-
 # FUNCTION install_go
 # Installs Go in the directory specified by GO_INSTALL_DIR
-
 function install_go {
 
 	local exit_code=0
@@ -324,10 +249,10 @@ function install_go {
 	local kernel_name=$(uname -s 2>/dev/null)
 	local machine_hardware_name=$(uname -m 2>/dev/null)
 
-	[ "$kernel_name" == "Linux" ] && kernel_name="linux"
-	[ "$kernel_name" == "Darwin" ] && kernel_name="darwin"
-	[ "$machine_hardware_name" == "aarch64" ] && machine_hardware_name="arm64"
-	[ "$machine_hardware_name" == "x86_64" ] && machine_hardware_name="amd64"
+	[ "$kernel_name" == "Linux" ] && { kernel_name="linux" ; }
+	[ "$kernel_name" == "Darwin" ] && { kernel_name="darwin" ; }
+	[ "$machine_hardware_name" == "aarch64" ] && { machine_hardware_name="arm64" ; }
+	[ "$machine_hardware_name" == "x86_64" ] && { machine_hardware_name="amd64" ; }
 
 	local go_binary_name="go${GO_VERSION}.${kernel_name}-${machine_hardware_name}.tar.gz"
 
@@ -338,11 +263,7 @@ function install_go {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not download Go ${GO_VERSION} from https://go.dev/dl/${go_binary_name}."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not download Go ${GO_VERSION} from https://go.dev/dl/${go_binary_name}." ; return $exit_code ; }
 
 	print_info "Successfully downloaded Go ${GO_VERSION} from https://go.dev/dl/${go_binary_name}."
 
@@ -369,11 +290,7 @@ function install_go {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not install Go ${GO_VERSION} to \"$GO_INSTALL_DIR\"."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not install Go ${GO_VERSION} to \"$GO_INSTALL_DIR\"." ; return $exit_code ; }
 
 	print_info "Successfully installed Go ${GO_VERSION} to \"$GO_INSTALL_DIR\"."
 
@@ -387,7 +304,7 @@ function install_go {
 
 	if [ -d "/etc/profile.d" ]
 	then
-		echo "export PATH=\$PATH:${GO_INSTALL_DIR}/go/bin" 1>"/etc/profile.d/golang-path.sh" 2>/dev/null
+		printf "export PATH=\$PATH:${GO_INSTALL_DIR}/go/bin\n" 1>"/etc/profile.d/golang-path.sh" 2>/dev/null
 		if [ $? -eq 0 ]
 		then
 			chmod a+x "/etc/profile.d/golang-path.sh" 1>/dev/null 2>/dev/null
@@ -402,7 +319,7 @@ function install_go {
 		fi
 	elif [ -d "/etc/paths.d" ]
 	then
-		echo "${GO_INSTALL_DIR}/go/bin" 1>"/etc/paths.d/golang-path" 2>/dev/null
+		printf "${GO_INSTALL_DIR}/go/bin\n" 1>"/etc/paths.d/golang-path" 2>/dev/null
 		if [ $? -eq 0 ]
 		then
 			print_info "Successfully added the \"golang-path\" file to the \"/etc/paths.d\" directory, the Go command will be globally available."
@@ -415,7 +332,6 @@ function install_go {
 	
 	return 0
 }
-
 
 # FUNCTION install_cli
 # Installs the Genesys Cloud Platform API CLI in the directory specified by CLI_INSTALL_DIR
@@ -435,11 +351,7 @@ function install_cli {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not build the Genesys Cloud Platform API CLI."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not build the Genesys Cloud Platform API CLI." ; return $exit_code ; }
 
 	print_info "Successfully built the Genesys Cloud Platform API CLI."
 
@@ -473,18 +385,13 @@ function install_cli {
 	cp "$(go env GOPATH 2>/dev/null)/bin/gc" "${CLI_INSTALL_DIR}" 1>/dev/null 2>/dev/null
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not copy the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}\"."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not copy the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}\"." ; return $exit_code ; }
 
 	print_info "Successfully copied the Genesys Cloud Platform API CLI to the installation directory \"${CLI_INSTALL_DIR}\"."
 	CLI_INSTALLED=1
 
 	return 0
 }
-
 
 # FUNCTION install_terraform
 # Installs Terraform in the directory specified by TERRAFORM_INSTALL_DIR
@@ -497,10 +404,10 @@ function install_terraform {
 	local kernel_name=$(uname -s 2>/dev/null)
 	local machine_hardware_name=$(uname -m 2>/dev/null)
 
-	[ "$kernel_name" == "Linux" ] && kernel_name="linux"
-	[ "$kernel_name" == "Darwin" ] && kernel_name="darwin"
-	[ "$machine_hardware_name" == "aarch64" ] && machine_hardware_name="arm64"
-	[ "$machine_hardware_name" == "x86_64" ] && machine_hardware_name="amd64"
+	[ "$kernel_name" == "Linux" ] && { kernel_name="linux" ; }
+	[ "$kernel_name" == "Darwin" ] && { kernel_name="darwin" ; }
+	[ "$machine_hardware_name" == "aarch64" ] && { machine_hardware_name="arm64" ; }
+	[ "$machine_hardware_name" == "x86_64" ] && { machine_hardware_name="amd64" ; }
 
 	local terraform_binary_name="terraform_${TERRAFORM_VERSION}_${kernel_name}_${machine_hardware_name}.zip"
 
@@ -511,11 +418,7 @@ function install_terraform {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not download Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not download Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}." ; return $exit_code ; }
 
 	print_info "Successfully downloaded Terraform ${TERRAFORM_VERSION} from https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/${terraform_binary_name}."
 
@@ -542,11 +445,7 @@ function install_terraform {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not install Terraform ${TERRAFORM_VERSION} to \"$TERRAFORM_INSTALL_DIR\"."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not install Terraform ${TERRAFORM_VERSION} to \"$TERRAFORM_INSTALL_DIR\"." ; return $exit_code ; }
 
 	print_info "Successfully installed Terraform ${TERRAFORM_VERSION} to \"$TERRAFORM_INSTALL_DIR\"."
 
@@ -554,7 +453,6 @@ function install_terraform {
 
 	return 0
 }
-
 
 # FUNCTION add_archy_path_to_zprofile
 # Adds Archy to the PATH environment variable in the current user's .zprofile file
@@ -568,13 +466,22 @@ function add_archy_path_to_zprofile {
 		else
 			sudo -u "$SUDO_USER" touch "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 		fi
-		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED_BY_INSTALLER=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
+		if [ $? -eq 0 ]
+		then
+			ARCHY_ZPROFILE_CREATED_BY_INSTALLER=1
+		else
+			print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh."
+			return 1
+		fi
 	fi
 
 	if [ -s "${HOME}/.zprofile" ]
 	then
-		tail -c1 "${HOME}/.zprofile" 2>/dev/null | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.zprofile" 2>/dev/null
-		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
+		if ! tail -c1 "${HOME}/.zprofile" 2>/dev/null | grep -q "^$"
+		then
+			printf "\n" >> "${HOME}/.zprofile" 2>/dev/null
+			[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
+		fi
 	fi
 
 	if [ -f "${HOME}/.zprofile" ]			
@@ -587,7 +494,10 @@ function add_archy_path_to_zprofile {
 			return 0
 		else
 			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh."
-			[ $ARCHY_ZPROFILE_CREATED_BY_INSTALLER -eq 1 ] && rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
+			if [ $ARCHY_ZPROFILE_CREATED_BY_INSTALLER -eq 1 ]
+			then
+				rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
+			fi
 			return 1
 		fi
 	else
@@ -595,7 +505,6 @@ function add_archy_path_to_zprofile {
 		return 1
 	fi
 }
-
 
 # FUNCTION add_archy_path_to_bash_profile
 # Adds Archy to the PATH environment variable in the current user's .bash_profile file
@@ -609,13 +518,22 @@ function add_archy_path_to_bash_profile {
 		else
 			sudo -u "$SUDO_USER" touch "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 		fi
-		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED_BY_INSTALLER=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
+		if [ $? -eq 0 ]
+		then
+			ARCHY_BASHPROFILE_CREATED_BY_INSTALLER=1
+		else
+			print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash."
+			return 1
+		fi
 	fi
 
 	if [ -s "${HOME}/.bash_profile" ]
 	then
-		tail -c1 "${HOME}/.bash_profile" 2>/dev/null | grep "^$" 1>/dev/null 2>/dev/null || printf "\n" >> "${HOME}/.bash_profile" 2>/dev/null
-		[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
+		if ! tail -c1 "${HOME}/.bash_profile" 2>/dev/null | grep -q "^$"
+		then
+			printf "\n" >> "${HOME}/.bash_profile" 2>/dev/null
+			[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
+		fi
 	fi
 
 	if [ -f "${HOME}/.bash_profile" ]			
@@ -628,7 +546,10 @@ function add_archy_path_to_bash_profile {
 			return 0
 		else
 			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash."
-			[ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ] && rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
+			if [ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ]
+			then
+				rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
+			fi
 			return 1
 		fi
 	else
@@ -636,7 +557,6 @@ function add_archy_path_to_bash_profile {
 		return 1
 	fi
 }
-
 
 # FUNCTION install_archy
 # Installs Archy in the current user's home directory
@@ -650,8 +570,8 @@ function install_archy {
 	local machine_hardware_name=$(uname -m 2>/dev/null)
 	local archy_binary_name=""
 
-	[ "$kernel_name" == "Darwin" ] && archy_binary_name="archy-macos.zip"
-	[ "$kernel_name" == "Linux" ] && archy_binary_name="archy-linux.zip"
+	[ "$kernel_name" == "Darwin" ] && { archy_binary_name="archy-macos.zip" ; }
+	[ "$kernel_name" == "Linux" ] && { archy_binary_name="archy-linux.zip" ; }
 
 	[ -z "$archy_binary_name" ] && { print_warn "Archy does not support the \"${kernel_name} platform on ${machine_hardware_name}\" architecture, skipping the Archy installation." ; return 0 ; }
 
@@ -662,11 +582,7 @@ function install_archy {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not download Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not download Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}." ; return $exit_code ; }
 
 	print_info "Successfully downloaded Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}."
 
@@ -675,21 +591,13 @@ function install_archy {
 
 	exit_code=$?
 
-	if [ $exit_code -ne 0 ]
-	then
-		print_error "Could not install Archy to \"${HOME}\"."
-		return $exit_code
-	fi
+	[ $exit_code -ne 0 ] && { print_error "Could not install Archy to \"${HOME}\"." ; return $exit_code ; }
 
 	# Transfers ownership of the Archy files to the user when running under sudo
 	if [ -n "$SUDO_USER" ]
 	then
 		chown -R "$SUDO_USER:" "$HOME/archy" 1>/dev/null 2>/dev/null
-		if [ $? -ne 0 ]
-		then
-			print_error "Could not set the ownership of the Archy files in \"${HOME}/archy\" to the user \"${CURRENT_USER}\"."
-			return 1
-		fi
+		[ $? -ne 0 ] && { print_error "Could not set the ownership of the Archy files in \"${HOME}/archy\" to the user \"${CURRENT_USER}\"." ; return 1 ; }
 	fi
 
 	print_info "Successfully installed Archy to \"${HOME}\"."
@@ -724,7 +632,6 @@ function install_archy {
 	fi
 }
 
-
 # FUNCTION cleanup
 # Cleans up temporary files and directories, and reverts the installation if it failed
 # $1: Exit code
@@ -740,14 +647,24 @@ function cleanup {
 
 		if [ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null && print_info "Successfully removed \".bash_profile\" from \"${HOME}\"." || print_error "Could not remove \".bash_profile\" from \"${HOME}\"."
+			if rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed \".bash_profile\" from \"${HOME}\"."
+			else
+				print_error "Could not remove \".bash_profile\" from \"${HOME}\"."
+			fi
 		fi
 
 		# Removes .zprofile if it was created by the Archy installation
 
 		if [ $ARCHY_ZPROFILE_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null && print_info "Successfully removed \".zprofile\" from \"${HOME}\"." || print_error "Could not remove \".zprofile\" from \"${HOME}\"."
+			if rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed \".zprofile\" from \"${HOME}\"."
+			else
+				print_error "Could not remove \".zprofile\" from \"${HOME}\"."
+			fi
 		fi
 
 		# Removes Archy from the PATH environment variable in the current user's .bash_profile file
@@ -798,35 +715,60 @@ function cleanup {
 
 		if [ $ARCHY_INSTALLED -eq 1 ]
 		then
-			rm -Rf "${HOME}/archy" 1>/dev/null 2>/dev/null && print_info "Successfully removed Archy from \"${HOME}\"." || print_error "Could not remove Archy from \"${HOME}\"."
+			if rm -Rf "${HOME}/archy" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed Archy from \"${HOME}\"."
+			else
+				print_error "Could not remove Archy from \"${HOME}\"."
+			fi
 		fi
 
 		# Removes Terraform
 
 		if [ $TERRAFORM_INSTALLED -eq 1 ]
 		then
-			rm -f "${TERRAFORM_INSTALL_DIR}/terraform" 1>/dev/null 2>/dev/null && print_info "Successfully removed Terraform from \"${TERRAFORM_INSTALL_DIR}\"." || print_error "Could not remove Terraform from \"${TERRAFORM_INSTALL_DIR}\"."
+			if rm -f "${TERRAFORM_INSTALL_DIR}/terraform" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed Terraform from \"${TERRAFORM_INSTALL_DIR}\"."
+			else
+				print_error "Could not remove Terraform from \"${TERRAFORM_INSTALL_DIR}\"."
+			fi
 		fi
 
 		# Removes the Terraform installation directory if it was created by this script and is empty
 
 		if [ $TERRAFORM_INSTALL_DIR_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			rmdir "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"." || print_warn "Did not remove the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\" because it is not empty or could not be removed."
+			if rmdir "$TERRAFORM_INSTALL_DIR" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\"."
+			else
+				print_warn "Did not remove the Terraform installation directory \"${TERRAFORM_INSTALL_DIR}\" because it is not empty or could not be removed."
+			fi
 		fi
 
 		# Removes the Genesys Cloud Platform API CLI
 
 		if [ $CLI_INSTALLED -eq 1 ]
 		then
-			rm -f "${CLI_INSTALL_DIR}/gc" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud Platform API CLI from \"${CLI_INSTALL_DIR}\"." || print_error "Could not remove the Genesys Cloud Platform API CLI from \"${CLI_INSTALL_DIR}\"."
+			if rm -f "${CLI_INSTALL_DIR}/gc" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed the Genesys Cloud Platform API CLI from \"${CLI_INSTALL_DIR}\"."
+			else
+				print_error "Could not remove the Genesys Cloud Platform API CLI from \"${CLI_INSTALL_DIR}\"."
+			fi
 		fi
 
 		# Removes the Genesys Cloud Platform API CLI installation directory if it was created by this script and is empty
 
 		if [ $CLI_INSTALL_DIR_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			rmdir "$CLI_INSTALL_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\"." || print_warn "Did not remove the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\" because it is not empty or could not be removed."
+			if rmdir "$CLI_INSTALL_DIR" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\"."
+			else
+				print_warn "Did not remove the Genesys Cloud Platform API CLI installation directory \"${CLI_INSTALL_DIR}\" because it is not empty or could not be removed."
+			fi
 		fi
 
 		# Removes Go from the global path
@@ -856,8 +798,18 @@ function cleanup {
 		if [ $GO_INSTALLED -eq 1 ]
 		then
 			local go_path="$(go env GOPATH 2>/dev/null)"
-			rm -Rf "$go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${go_path}\"." || print_error "Could not remove the Go workspace directory \"${go_path}\"."
-			rm -Rf "${GO_INSTALL_DIR}/go" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go installation directory \"${GO_INSTALL_DIR}/go\"." || print_error "Could not remove the Go installation directory \"${GO_INSTALL_DIR}/go\"."
+			if rm -Rf "$go_path" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed the Go workspace directory \"${go_path}\"."
+			else
+				print_error "Could not remove the Go workspace directory \"${go_path}\"."
+			fi
+			if rm -Rf "${GO_INSTALL_DIR}/go" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed the Go installation directory \"${GO_INSTALL_DIR}/go\"."
+			else
+				print_error "Could not remove the Go installation directory \"${GO_INSTALL_DIR}/go\"."
+			fi
 		fi
 
 	else
@@ -868,7 +820,12 @@ function cleanup {
 		if [ $GO_INSTALLED -eq 1 ]
 		then
 			local go_path="$(go env GOPATH 2>/dev/null)"
-			rm -Rf "$go_path" 1>/dev/null 2>/dev/null && print_info "Successfully removed the Go workspace directory \"${go_path}\"." || print_error "Could not remove the Go workspace directory \"${go_path}\"."
+			if rm -Rf "$go_path" 1>/dev/null 2>/dev/null
+			then
+				print_info "Successfully removed the Go workspace directory \"${go_path}\"."
+			else
+				print_error "Could not remove the Go workspace directory \"${go_path}\"."
+			fi
 		fi
 	fi
 
@@ -876,7 +833,12 @@ function cleanup {
 
 	if [ -n "$TMP_DIR" ]
 	then
-		rm -Rf "$TMP_DIR" 1>/dev/null 2>/dev/null && print_info "Successfully removed the temporary directory \"$TMP_DIR\"." || print_error "Could not remove the temporary directory \"$TMP_DIR\"."
+		if rm -Rf "$TMP_DIR" 1>/dev/null 2>/dev/null
+		then
+			print_info "Successfully removed the temporary directory \"$TMP_DIR\"."
+		else
+			print_error "Could not remove the temporary directory \"$TMP_DIR\"."
+		fi
 	fi
 
 	print_info "Finished cleanup."
