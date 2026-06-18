@@ -19,8 +19,8 @@ TERRAFORM_INSTALL_DIR_CREATED_BY_INSTALLER=0 # Terraform installation directory 
 TERRAFORM_VERSION="1.14.8" # Terraform version to be installed
 TERRAFORM_INSTALLED=0 # Terraform installation status
 
-ARCHY_ZPROFILE_CREATED=0 # .zprofile creation status
-ARCHY_BASHPROFILE_CREATED=0 # .bash_profile creation status
+ARCHY_ZPROFILE_CREATED_BY_INSTALLER=0 # .zprofile creation status
+ARCHY_BASHPROFILE_CREATED_BY_INSTALLER=0 # .bash_profile creation status
 ARCHY_INSTALLED=0 # Archy installation status
 
 # FUNCTION print_info:
@@ -253,10 +253,12 @@ function check_prerequisites {
 			print_warn "Archy on Linux on ARM architecture requires the amd64 versions of the \"libc6\" and \"libstdc++6\" libraries to run its x86_64 binary. The \"dpkg\" command is not available, so these prerequisites could not be verified automatically. If Archy fails to initialize after its installation, please ensure that the necessary emulation libraries are installed and configured correctly."
 		fi
 
+		# TODO: Add checks for other Linux package managers
+
 		# Checks if the kernel can run x86_64 (amd64) binaries through an emulation layer registered with binfmt_misc (for example Rosetta 2 in a virtual machine, or qemu-user-static)
 		local binfmt_dir="/proc/sys/fs/binfmt_misc"
 		local binfmt_entry
-		local amd64_emulation_enabled=1
+		local amd64_emulation_enabled=0
 
 		if [ -d "$binfmt_dir" ] && grep -q "^enabled$" "${binfmt_dir}/status" 2>/dev/null
 		then
@@ -270,13 +272,13 @@ function check_prerequisites {
 				# An enabled handler whose ELF magic targets the x86_64 machine type (e_machine 0x3e) can run amd64 binaries
 				if grep -q "^enabled$" "$binfmt_entry" 2>/dev/null && grep -qiE "^magic 7f454c46[0-9a-f]*3e00" "$binfmt_entry" 2>/dev/null
 				then
-					amd64_emulation_enabled=0
+					amd64_emulation_enabled=1
 					break
 				fi
 			done
 		fi
 
-		if [ $amd64_emulation_enabled -ne 0 ]
+		if [ $amd64_emulation_enabled -eq 0 ]
 		then
 			print_error "Archy on Linux on ARM architecture requires an emulation layer to run x86_64 (amd64) binaries, but no enabled \"binfmt_misc\" handler for x86_64 was found. Please configure an x86_64 emulation layer (for example Rosetta 2 when running in a virtual machine, or qemu-user-static) and run the toolkit installer again."
 			return 1
@@ -293,7 +295,7 @@ function create_tmp_dir {
 	local exit_code=0
 
 	local tmp_dir
-	tmp_dir=$(mktemp -d "/var/tmp/genesys-toolkit-install-XXXXXX" 2>/dev/null)
+	tmp_dir=$(mktemp -d "/var/tmp/genesys-toolkit-install.XXXXXX" 2>/dev/null)
 
 	exit_code=$?
 	
@@ -556,7 +558,6 @@ function install_terraform {
 
 # FUNCTION add_archy_path_to_zprofile
 # Adds Archy to the PATH environment variable in the current user's .zprofile file
-
 function add_archy_path_to_zprofile {
 	
 	if [ ! -e "${HOME}/.zprofile" ]
@@ -567,7 +568,7 @@ function add_archy_path_to_zprofile {
 		else
 			sudo -u "$SUDO_USER" touch "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 		fi
-		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
+		[ $? -eq 0 ] && ARCHY_ZPROFILE_CREATED_BY_INSTALLER=1 || { print_warn "Could not create the \"${HOME}/.zprofile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh." ; return 1 ; }
 	fi
 
 	if [ -s "${HOME}/.zprofile" ]
@@ -586,7 +587,7 @@ function add_archy_path_to_zprofile {
 			return 0
 		else
 			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.zprofile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Zsh."
-			[ $ARCHY_ZPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
+			[ $ARCHY_ZPROFILE_CREATED_BY_INSTALLER -eq 1 ] && rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null
 			return 1
 		fi
 	else
@@ -598,7 +599,6 @@ function add_archy_path_to_zprofile {
 
 # FUNCTION add_archy_path_to_bash_profile
 # Adds Archy to the PATH environment variable in the current user's .bash_profile file
-
 function add_archy_path_to_bash_profile {
 	
 	if [ ! -e "${HOME}/.bash_profile" ]
@@ -609,7 +609,7 @@ function add_archy_path_to_bash_profile {
 		else
 			sudo -u "$SUDO_USER" touch "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 		fi
-		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
+		[ $? -eq 0 ] && ARCHY_BASHPROFILE_CREATED_BY_INSTALLER=1 || { print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash." ; return 1 ; }
 	fi
 
 	if [ -s "${HOME}/.bash_profile" ]
@@ -628,7 +628,7 @@ function add_archy_path_to_bash_profile {
 			return 0
 		else
 			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${CURRENT_USER}\" when using Bash."
-			[ $ARCHY_BASHPROFILE_CREATED -eq 1 ] && rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
+			[ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ] && rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
 			return 1
 		fi
 	else
@@ -640,7 +640,6 @@ function add_archy_path_to_bash_profile {
 
 # FUNCTION install_archy
 # Installs Archy in the current user's home directory
-
 function install_archy {
 
 	local exit_code=0
@@ -671,14 +670,8 @@ function install_archy {
 
 	print_info "Successfully downloaded Archy from https://sdk-cdn.mypurecloud.com/archy/latest/${archy_binary_name}."
 
-	# Installs Archy in the user's home directory
-
-	if [ -z "$SUDO_USER" ]
-	then
-		unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
-	else
-		sudo -u "$SUDO_USER" unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
-	fi
+	# Installs Archy in the user's home directory.
+	unzip "${TMP_DIR}/${archy_binary_name}" -d "$HOME/archy" 1>/dev/null 2>/dev/null
 
 	exit_code=$?
 
@@ -686,6 +679,17 @@ function install_archy {
 	then
 		print_error "Could not install Archy to \"${HOME}\"."
 		return $exit_code
+	fi
+
+	# Transfers ownership of the Archy files to the user when running under sudo
+	if [ -n "$SUDO_USER" ]
+	then
+		chown -R "$SUDO_USER:" "$HOME/archy" 1>/dev/null 2>/dev/null
+		if [ $? -ne 0 ]
+		then
+			print_error "Could not set the ownership of the Archy files in \"${HOME}/archy\" to the user \"${CURRENT_USER}\"."
+			return 1
+		fi
 	fi
 
 	print_info "Successfully installed Archy to \"${HOME}\"."
@@ -723,8 +727,7 @@ function install_archy {
 
 # FUNCTION cleanup
 # Cleans up temporary files and directories, and reverts the installation if it failed
-# arg1: Exit code
-
+# $1: Exit code
 function cleanup {
 
 	local kernel_name=$(uname -s 2>/dev/null)
@@ -735,14 +738,14 @@ function cleanup {
 
 		# Removes .bash_profile if it was created by the Archy installation
 
-		if [ $ARCHY_BASHPROFILE_CREATED -eq 1 ]
+		if [ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ]
 		then
 			rm -f "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null && print_info "Successfully removed \".bash_profile\" from \"${HOME}\"." || print_error "Could not remove \".bash_profile\" from \"${HOME}\"."
 		fi
 
 		# Removes .zprofile if it was created by the Archy installation
 
-		if [ $ARCHY_ZPROFILE_CREATED -eq 1 ]
+		if [ $ARCHY_ZPROFILE_CREATED_BY_INSTALLER -eq 1 ]
 		then
 			rm -f "${HOME}/.zprofile" 1>/dev/null 2>/dev/null && print_info "Successfully removed \".zprofile\" from \"${HOME}\"." || print_error "Could not remove \".zprofile\" from \"${HOME}\"."
 		fi
