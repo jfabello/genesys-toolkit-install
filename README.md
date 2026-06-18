@@ -39,15 +39,12 @@ sudo genesys-toolkit-install.sh
 The **Genesys Toolkit Installer** requires the following:
 
 - No previous installation of the toolkit tools, the [Go](https://go.dev/) language, and [Terraform](https://www.terraform.io/).
-- The following UNIX commands: `curl` and `unzip`.
+- The following UNIX commands: `curl`, `git`, and `unzip`.
 - A supported UNIX platform (see [supported platforms](#supported-platforms)).
 - Rosetta 2 when the platform is macOS on Apple Silicon.
 - The capability to run amd64 binaries (i.e. QEMU) and the amd64 versions of libc6 and libstdc++6 when the platform is Linux on arm64.
 
 The script will generate a detailed error message if a requirement is not met.
-
-> [!IMPORTANT]
-> Checks for the prerequisites when the platform is Linux on arm64 are not fully implemented. The installer might fail silently. As a precaution, a warning is shown when the toolkit installer is running on the aforementioned platform.
 
 ## Supported platforms
 
@@ -67,8 +64,8 @@ The script will generate a detailed error message if a requirement is not met.
 
 **Genesys Toolkit Installer** installs the following third-party languages and tools:
 
-- [Go](https://go.dev/) 1.26.2
-- [Terraform](https://www.terraform.io/) 1.14.8
+- [Go](https://go.dev/) 1.26.4
+- [Terraform](https://www.terraform.io/) 1.15.6
 
 ## Contributing
 
