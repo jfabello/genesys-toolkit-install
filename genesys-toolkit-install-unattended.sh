@@ -28,7 +28,7 @@ TERRAFORM_VERSION="1.15.6" # Terraform version to be installed
 TERRAFORM_INSTALLED=0 # Terraform installation status
 
 ARCHY_ZPROFILE_CREATED_BY_INSTALLER=0 # .zprofile creation status
-ARCHY_BASHPROFILE_CREATED_BY_INSTALLER=0 # .bash_profile creation status
+ARCHY_SHELL_PROFILE_CREATED_BY_INSTALLER=0 # .profile creation status
 ARCHY_INSTALLED=0 # Archy installation status
 
 # FUNCTION print_info:
@@ -552,53 +552,53 @@ function add_archy_path_to_zprofile {
 }
 
 # FUNCTION add_archy_path_to_bash_profile
-# Adds Archy to the PATH environment variable in the current user's .bash_profile file
+# Adds Archy to the PATH environment variable in the current user's .profile file
 function add_archy_path_to_bash_profile {
 
-	if [ ! -e "${HOME}/.bash_profile" ]
+	if [ ! -e "${HOME}/.profile" ]
 	then
 		if [ "$TARGET_USER" == "root" ]
 		then
-			touch "${HOME}/.bash_profile"
+			touch "${HOME}/.profile"
 		else
-			sudo -u "$TARGET_USER" touch "${HOME}/.bash_profile"
+			sudo -u "$TARGET_USER" touch "${HOME}/.profile"
 		fi
 		if [ $? -eq 0 ]
 		then
-			ARCHY_BASHPROFILE_CREATED_BY_INSTALLER=1
+			ARCHY_SHELL_PROFILE_CREATED_BY_INSTALLER=1
 		else
-			print_warn "Could not create the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash."
+			print_warn "Could not create the \"${HOME}/.profile\" file, Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash."
 			return 1
 		fi
 	fi
 
-	if [ -s "${HOME}/.bash_profile" ]
+	if [ -s "${HOME}/.profile" ]
 	then
-		if ! tail -c1 "${HOME}/.bash_profile" 2>/dev/null | grep -q "^$"
+		if ! tail -c1 "${HOME}/.profile" 2>/dev/null | grep -q "^$"
 		then
-			printf "\n" >> "${HOME}/.bash_profile" 2>/dev/null
-			[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.bash_profile\" file, Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash." ; return 1 ; }
+			printf "\n" >> "${HOME}/.profile" 2>/dev/null
+			[ $? -ne 0 ] && { print_warn "Could not add a new line to the \"${HOME}/.profile\" file, Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash." ; return 1 ; }
 		fi
 	fi
 
-	if [ -f "${HOME}/.bash_profile" ]
+	if [ -f "${HOME}/.profile" ]
 	then
-		printf "# Archy path added by genesys-toolkit-install-unattended.sh\n" >> "${HOME}/.bash_profile" 2>/dev/null
-		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.bash_profile" 2>/dev/null
+		printf "# Archy path added by genesys-toolkit-install-unattended.sh\n" >> "${HOME}/.profile" 2>/dev/null
+		printf "export PATH=\$PATH:\$HOME/archy\n" >> "${HOME}/.profile" 2>/dev/null
 		if [ $? -eq 0 ]
 		then
-			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will be globally available to the user \"${TARGET_USER}\" when using Bash."
+			print_info "Successfully added Archy to the PATH environment variable in \"${HOME}/.profile\", Archy will be globally available to the user \"${TARGET_USER}\" when using Bash."
 			return 0
 		else
-			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.bash_profile\", Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash."
-			if [ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ]
+			print_warn "Could not add Archy to the PATH environment variable in \"${HOME}/.profile\", Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash."
+			if [ $ARCHY_SHELL_PROFILE_CREATED_BY_INSTALLER -eq 1 ]
 			then
-				rm -f "${HOME}/.bash_profile"
+				rm -f "${HOME}/.profile"
 			fi
 			return 1
 		fi
 	else
-		print_warn "\"${HOME}/.bash_profile\" is not a regular file, Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash."
+		print_warn "\"${HOME}/.profile\" is not a regular file, Archy will not be globally available to the user \"${TARGET_USER}\" when using Bash."
 		return 1
 	fi
 }
@@ -688,15 +688,15 @@ function cleanup {
 	then
 		print_warn "Starting cleanup with rollback..."
 
-		# Removes .bash_profile if it was created by the Archy installation
+		# Removes .profile if it was created by the Archy installation
 
-		if [ $ARCHY_BASHPROFILE_CREATED_BY_INSTALLER -eq 1 ]
+		if [ $ARCHY_SHELL_PROFILE_CREATED_BY_INSTALLER -eq 1 ]
 		then
-			if rm -f "${HOME}/.bash_profile"
+			if rm -f "${HOME}/.profile"
 			then
-				print_info "Successfully removed \".bash_profile\" from \"${HOME}\"."
+				print_info "Successfully removed \".profile\" from \"${HOME}\"."
 			else
-				print_error "Could not remove \".bash_profile\" from \"${HOME}\"."
+				print_error "Could not remove \".profile\" from \"${HOME}\"."
 			fi
 		fi
 
@@ -712,24 +712,24 @@ function cleanup {
 			fi
 		fi
 
-		# Removes Archy from the PATH environment variable in the current user's .bash_profile file
+		# Removes Archy from the PATH environment variable in the current user's .profile file
 
-		if [ -f "${HOME}/.bash_profile" ]
+		if [ -f "${HOME}/.profile" ]
 		then
-			grep "# Archy path added by genesys-toolkit-install-unattended.sh" "${HOME}/.bash_profile" 1>/dev/null 2>/dev/null
+			grep "# Archy path added by genesys-toolkit-install-unattended.sh" "${HOME}/.profile" 1>/dev/null 2>/dev/null
 			if [ $? -eq 0 ]
 			then
 				if [ "$kernel_name" == "Darwin" ]
 				then
-					sed -i '' -e '/^# Archy path added by genesys-toolkit-install-unattended.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+					sed -i '' -e '/^# Archy path added by genesys-toolkit-install-unattended.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.profile"
 				else
-					sed -i -e '/^# Archy path added by genesys-toolkit-install-unattended.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.bash_profile"
+					sed -i -e '/^# Archy path added by genesys-toolkit-install-unattended.sh/d' -e '/^export PATH=$PATH:$HOME\/archy/d' "${HOME}/.profile"
 				fi
 				if [ $? -eq 0 ]
 				then
-					print_info "Successfully removed Archy from the PATH environment variable in \"${HOME}/.bash_profile\"."
+					print_info "Successfully removed Archy from the PATH environment variable in \"${HOME}/.profile\"."
 				else
-					print_error "Could not remove Archy from the PATH environment variable in \"${HOME}/.bash_profile\"."
+					print_error "Could not remove Archy from the PATH environment variable in \"${HOME}/.profile\"."
 				fi
 			fi
 		fi
